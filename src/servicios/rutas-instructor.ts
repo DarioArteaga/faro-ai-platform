@@ -4,7 +4,7 @@ import { MODULOS } from "@/lib/constantes"
 import { ErrorHttp } from "@/lib/errores"
 import { leerCuerpo, manejar } from "@/lib/http"
 import { leerPaginacion } from "@/lib/paginacion"
-import { cambiarModulo } from "@/servicios/cohorte"
+import { cambiarModulo, cambiarVozHabilitada } from "@/servicios/cohorte"
 import { listarTodas } from "@/servicios/conversaciones"
 import {
   activarImprevisto,
@@ -44,6 +44,15 @@ export async function actualizarModulo(request: Request): Promise<Response> {
     const datos = z.object({ modulo: z.enum(MODULOS) }).strict().parse(await leerCuerpo(request))
     await cambiarModulo(datos.modulo)
     return { modulo: datos.modulo }
+  })
+}
+
+export async function actualizarVoz(request: Request): Promise<Response> {
+  return manejar(async () => {
+    await exigirInstructor()
+    const datos = z.object({ voz_habilitada: z.boolean() }).strict().parse(await leerCuerpo(request))
+    await cambiarVozHabilitada(datos.voz_habilitada)
+    return { voz_habilitada: datos.voz_habilitada }
   })
 }
 

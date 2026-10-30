@@ -1,6 +1,12 @@
 import { Prisma } from "@prisma/client"
 
-import { duenoCoincide, puedeIniciarConversacion, puedeVerConversacion, type SesionUsuario } from "@/lib/autorizacion"
+import {
+  duenoCoincide,
+  puedeIniciarConversacion,
+  puedePedirTokenDeVoz,
+  puedeVerConversacion,
+  type SesionUsuario,
+} from "@/lib/autorizacion"
 import { casoActivo, interlocutorPorSlug, leerImprevistos } from "@/lib/catalogo"
 import { db, registrarFalloDeDatos } from "@/lib/db"
 import { detalleSeguro } from "@/lib/enmascarar"
@@ -12,7 +18,7 @@ import { permitir } from "@/lib/limite"
 import { metaPagina, type MetaPagina } from "@/lib/paginacion"
 import { validarIdConversacion } from "@/lib/validar"
 import { armarVariables, type VariablesConversacion } from "@/lib/variables"
-import { obtenerModulo } from "@/servicios/cohorte"
+import { obtenerModulo, obtenerVozHabilitada } from "@/servicios/cohorte"
 
 type Modo = "texto" | "voz"
 
@@ -116,6 +122,9 @@ export async function iniciarSesion(
   }
   const interlocutor = interlocutorPorSlug(entrada.agenteSlug)
   if (!interlocutor) throw new ErrorHttp(404, "No encontramos ese interlocutor.")
+  if (entrada.modo === "voz" && !puedePedirTokenDeVoz(usuario.rol, await obtenerVozHabilitada())) {
+    throw new ErrorHttp(403, "La voz no está habilitada.")
+  }
   const variables = await variablesPara(usuario, entrada.agenteSlug)
   const credencial =
     entrada.modo === "texto"

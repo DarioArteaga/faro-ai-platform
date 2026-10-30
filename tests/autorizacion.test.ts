@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest"
 import {
   duenoCoincide,
   puedeIniciarConversacion,
+  puedePedirTokenDeVoz,
   puedeVerConversacion,
   type SesionUsuario,
 } from "@/lib/autorizacion"
@@ -19,6 +20,12 @@ const estudiante: SesionUsuario = {
 }
 
 describe("autorización", () => {
+  it("niega el token de voz a un estudiante mientras el interruptor está apagado", () => {
+    expect(puedePedirTokenDeVoz("estudiante", false)).toBe(false)
+    expect(puedePedirTokenDeVoz("estudiante", true)).toBe(true)
+    expect(puedePedirTokenDeVoz("instructor", false)).toBe(true)
+    expect(puedePedirTokenDeVoz("instructor", true)).toBe(true)
+  })
   it("niega la credencial sin sesión y sin equipo", () => {
     expect(puedeIniciarConversacion(null)).toBe(401)
     expect(puedeIniciarConversacion({ ...estudiante, equipoId: null, equipoNombre: null })).toBe(403)

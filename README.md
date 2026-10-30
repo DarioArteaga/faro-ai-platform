@@ -30,7 +30,7 @@ Para el Postgres del `docker-compose.yml`, el usuario, la contraseña y la base 
 ```powershell
 docker compose up -d
 npm install
-npx prisma migrate dev
+npx prisma migrate deploy
 npm run dev
 npm test
 npm run plan-b

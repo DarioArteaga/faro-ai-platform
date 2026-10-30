@@ -67,7 +67,7 @@ Container_Boundary(app, "Aplicacion") {
   Component(sesion, "Sesion", "Auth.js", "Google, cookie y lista de acceso")
   Component(catalogo, "Catalogo", "YAML", "Caso activo e imprevistos")
   Component(conversaciones, "Conversaciones", "Route handlers", "Credencial, variables, transcripcion y resumen")
-  Component(panel, "Panel", "Route handlers", "Modulo, activaciones, cobertura y equipos")
+  Component(panel, "Panel", "Route handlers", "Modulo, voz, activaciones, cobertura y equipos")
 }
 Rel(interfaz, sesion, "Exige sesion")
 Rel(interfaz, conversaciones, "Inicia y consulta")
@@ -80,8 +80,8 @@ Rel(panel, sesion, "Exige rol instructor")
 
 | Componente | Responsabilidad |
 | --- | --- |
-| Interfaz | Tarjetas, conversación en texto o voz, historial y formularios del instructor |
+| Interfaz | Tarjetas, conversación en texto y en voz si la cohorte la habilita, historial y formularios del instructor |
 | Sesión | Login con Google y rechazo de correos que no están en la lista |
 | Catálogo | Lee `config/casos.yaml` y `config/imprevistos.yaml` |
 | Conversaciones | Pide la credencial, guarda el id y lee transcripción y resumen |
-| Panel | Cambia el módulo, activa claves, muestra cobertura y administra equipos |
+| Panel | Cambia el módulo y la voz de la cohorte, activa claves, muestra cobertura y administra equipos |

@@ -4,6 +4,7 @@ import { notFound } from "next/navigation"
 
 import { ConversacionCliente } from "@/componentes/conversacion-cliente"
 import { interlocutorPorSlug } from "@/lib/catalogo"
+import { obtenerVozHabilitada } from "@/servicios/cohorte"
 
 export async function generateMetadata({
   params,
@@ -26,6 +27,7 @@ export default async function Conversacion({
   const { slug } = await params
   const interlocutor = interlocutorPorSlug(slug)
   if (!interlocutor) notFound()
+  const vozHabilitada = await obtenerVozHabilitada()
   return (
     <main id="contenido">
       <p>
@@ -33,7 +35,7 @@ export default async function Conversacion({
       </p>
       <h1>{interlocutor.nombre}</h1>
       <p>{interlocutor.quien}</p>
-      <ConversacionCliente slug={interlocutor.slug} nombre={interlocutor.nombre} />
+      <ConversacionCliente slug={interlocutor.slug} nombre={interlocutor.nombre} vozHabilitada={vozHabilitada} />
     </main>
   )
 }

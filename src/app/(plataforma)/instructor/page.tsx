@@ -7,6 +7,7 @@ import {
   bajaEquipoAccion,
   bajaEstudianteAccion,
   cambiarModuloAccion,
+  cambiarVozAccion,
   crearEquipoAccion,
   crearEstudianteAccion,
   editarEstudianteAccion,
@@ -65,6 +66,27 @@ export default async function Instructor({
             </select>
           </label>
           <button type="submit">Guardar módulo</button>
+        </form>
+      </section>
+
+      <section>
+        <h2>Voz</h2>
+        <p>
+          Una conversación corta de texto gastó unos 120 créditos. La de voz gastó 1374 créditos en 63 segundos. Si la
+          enciendes, cualquier estudiante de la cohorte puede usarla.
+        </p>
+        <form action={cambiarVozAccion}>
+          <label htmlFor="voz-habilitada" className="inline-flex items-center gap-2">
+            <input
+              id="voz-habilitada"
+              type="checkbox"
+              name="voz_habilitada"
+              value="si"
+              defaultChecked={panel.voz_habilitada}
+            />
+            Habilitar la voz
+          </label>
+          <button type="submit">Guardar voz</button>
         </form>
       </section>
 

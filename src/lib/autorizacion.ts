@@ -10,6 +10,12 @@ export type SesionUsuario = {
   equipoNombre: string | null
 }
 
+/** Con la voz apagada, un estudiante no recibe token. El instructor sí puede pedirlo. */
+export function puedePedirTokenDeVoz(rol: Rol, vozHabilitada: boolean): boolean {
+  if (rol === "instructor") return true
+  return vozHabilitada
+}
+
 export function puedeIniciarConversacion(usuario: SesionUsuario | null): 401 | 403 | null {
   if (!usuario) return 401
   if (!usuario.equipoId || !usuario.equipoNombre) return 403

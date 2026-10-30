@@ -36,11 +36,13 @@ function Panel({
   slug,
   nombre,
   modo,
+  vozHabilitada,
   onModo,
 }: {
   slug: string
   nombre: string
   modo: Modo
+  vozHabilitada: boolean
   onModo: (modo: Modo) => void
 }): React.ReactElement {
   const idRef = useRef("")
@@ -154,18 +156,22 @@ function Panel({
     <section>
       <p aria-live="polite">{estado}</p>
       {error ? <p className="aviso">{error}</p> : null}
-      <fieldset disabled={conectada} className="border-0 p-0">
-        <legend>Modo</legend>
-        <label className="inline-flex items-center gap-2">
-          <input type="radio" name="modo" checked={modo === "texto"} onChange={() => onModo("texto")} />
-          Texto
-        </label>
-        <label className="inline-flex items-center gap-2">
-          <input type="radio" name="modo" checked={modo === "voz"} onChange={() => onModo("voz")} />
-          Voz
-        </label>
-      </fieldset>
-      <p>Para cambiar de modo, termina esta conversación y empieza otra.</p>
+      {vozHabilitada ? (
+        <fieldset disabled={conectada} className="border-0 p-0">
+          <legend>Modo</legend>
+          <label className="inline-flex items-center gap-2">
+            <input type="radio" name="modo" checked={modo === "texto"} onChange={() => onModo("texto")} />
+            Texto
+          </label>
+          <label className="inline-flex items-center gap-2">
+            <input type="radio" name="modo" checked={modo === "voz"} onChange={() => onModo("voz")} />
+            Voz
+          </label>
+        </fieldset>
+      ) : (
+        <p>Esta conversación es por texto.</p>
+      )}
+      {vozHabilitada ? <p>Para cambiar de modo, termina esta conversación y empieza otra.</p> : null}
       {conversacion.status === "disconnected" || conversacion.status === "error" ? (
         <button type="button" onClick={() => void empezar()} disabled={ocupado}>
           Empezar
@@ -206,11 +212,20 @@ function Panel({
   )
 }
 
-export function ConversacionCliente({ slug, nombre }: { slug: string; nombre: string }): React.ReactElement {
+export function ConversacionCliente({
+  slug,
+  nombre,
+  vozHabilitada,
+}: {
+  slug: string
+  nombre: string
+  vozHabilitada: boolean
+}): React.ReactElement {
   const [modo, setModo] = useState<Modo>("texto")
+  const modoEfectivo: Modo = vozHabilitada ? modo : "texto"
   return (
-    <ConversationProvider textOnly={modo === "texto"}>
-      <Panel slug={slug} nombre={nombre} modo={modo} onModo={setModo} />
+    <ConversationProvider textOnly={modoEfectivo === "texto"}>
+      <Panel slug={slug} nombre={nombre} modo={modoEfectivo} vozHabilitada={vozHabilitada} onModo={setModo} />
     </ConversationProvider>
   )
 }

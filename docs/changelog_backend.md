@@ -1,5 +1,11 @@
 # Cambios del backend
 
+- [2026-10-29] [FEAT] La cohorte tiene el interruptor `voz_habilitada`, apagado por defecto. Un estudiante no recibe token de voz mientras esté apagado.
+  Archivos modificados: prisma/schema.prisma, prisma/migrations/20261030031000_voz_habilitada/migration.sql, prisma/migrations/20261030031000_voz_habilitada/down.sql, docs/schema.dbml, docs/architecture_decisions.md, docs/architecture_c4.md, src/lib/autorizacion.ts, src/servicios/cohorte.ts, src/servicios/conversaciones.ts, src/servicios/instructor.ts, src/servicios/rutas-instructor.ts, src/app/api/v1/instructor/voz/route.ts, tests/autorizacion.test.ts
+
+- [2026-10-29] [DOCS] ADR-006 registra que el kit ya publica `enable_auth` en verdadero, y el README usa `prisma migrate deploy`.
+  Archivos modificados: docs/architecture_decisions.md, README.md
+
 - [2026-10-29] [FIX] Un cierre atrasado no reemplaza el resumen de una conversación posterior del mismo equipo y agente.
   Archivos modificados: src/servicios/conversaciones.ts, docs/architecture_decisions.md
 

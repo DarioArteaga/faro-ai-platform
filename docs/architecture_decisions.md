@@ -48,7 +48,7 @@ Las cuatro variables viajan siempre: `modulo`, `equipo`, `imprevistos_activos`, 
 
 Antes de M2 se evalúa fijar esas cuatro variables con el webhook de inicio de conversación. La documentación vigente de ElevenLabs dice que ese webhook corre en telefonía y mensajería entrante, y que no corre en el widget ni en el SDK. La evaluación tiene que confirmar si para entonces también cubre la URL firmada y el token de esta aplicación. Si no los cubre, el cambio de kit no cierra el hueco.
 
-Si el webhook ya cubre esas sesiones, en `fde-engagement-kit` haría falta dejar de publicar `platform_settings` vacío y activar, en los cuatro agentes, la lectura de los datos de inicio desde un webhook. La URL y el secreto salen de entorno, no del repositorio. La respuesta debe incluir `dynamic_variables` con las cuatro claves ya definidas en el agente y no debe habilitar overrides de prompt, voz ni modelo. El endpoint que calcula los valores vive en esta aplicación.
+Si el webhook ya cubre esas sesiones, en `fde-engagement-kit` haría falta activar, en los cuatro agentes, la lectura de los datos de inicio desde un webhook. La URL y el secreto salen de entorno, no del repositorio. La respuesta debe incluir `dynamic_variables` con las cuatro claves ya definidas en el agente y no debe habilitar overrides de prompt, voz ni modelo. El endpoint que calcula los valores vive en esta aplicación.
 
 Al empezar se guarda el id de ElevenLabs con el equipo, el estudiante, el agente, el módulo, el modo y el texto de imprevistos que se armó para esa sesión. Ese id solo se acepta si hay una sesión vigente para ese interlocutor y ese modo, y si ElevenLabs atribuye la conversación al mismo usuario (`user_id`) y al mismo agente (`agent_id`). Si no coinciden, o si ElevenLabs no tiene la conversación, la respuesta es 404. La misma comprobación corre al leer la transcripción y al guardar el resumen, para no archivarla ni usarla como `resumen_previo`. La transcripción se lee con ese id. La plataforma no la reconstruye. La URL firmada y el token no se escriben en los logs.
 
@@ -58,7 +58,7 @@ El resumen sale de `transcript_summary` en `GET /v1/convai/conversations/{id}/su
 
 El plan B es HTML estático generado desde `config/plan-b-equipos.yaml`. Hay un índice, una página por equipo con cuatro enlaces y una página por interlocutor con un solo widget. Cada widget lleva `modulo` `M1`, el nombre del equipo, `imprevistos_activos` `ninguno` y `resumen_previo` `ninguno`. La lista de equipos entra vacía a propósito: no se inventan nombres. El generador no publica páginas de equipo hasta que esa lista tenga filas.
 
-En uso normal los agentes quedan protegidos con `enable_auth`. Solo funciona la aplicación, que pide URL firmada o token. El widget no conecta, porque exige agentes públicos. El plan B es de emergencia. Si la aplicación falla, el cambio se hace en `fde-engagement-kit`: los cuatro agentes pasan a públicos y el widget queda limitado al dominio del plan B con `allowlist`. ElevenLabs trata la URL firmada y la allowlist como métodos excluyentes, así que no se combinan. Mientras esa emergencia está activa, la aplicación deja de poder abrir sesión. Hoy el generador del kit escribe `platform_settings` vacío, así que el estado real de la consola hay que confirmarlo antes de activarla. El host de la allowlist no se inventa. En local sería `127.0.0.1:8080`. El dominio público sigue pendiente.
+En uso normal los agentes quedan protegidos con `enable_auth`. El kit ya lo publica así: el ADR-019 de `fde-engagement-kit` deja `plan_b_publico` en falso y los cuatro agentes salen con `auth.enable_auth: true`, sin allowlist. Solo funciona la aplicación, que pide URL firmada o token. El widget no conecta, porque exige agentes públicos. El plan B es de emergencia. Si la aplicación falla, el cambio se hace en ese kit: `plan_b_publico` pasa a verdadero, los cuatro agentes quedan públicos y el widget se limita al host de `plan_b_host`. En local ese host es `127.0.0.1:8080`. ElevenLabs trata la URL firmada y la allowlist como métodos excluyentes, así que no se combinan. Mientras esa emergencia está activa, la aplicación deja de poder abrir sesión. El dominio público sigue pendiente.
 
 Todo corre en local. No se despliega ni se abre cuenta de nube hasta que haya confirmación explícita. El dominio y la cuenta de Henry siguen pendientes.
 
@@ -75,3 +75,11 @@ Faro AI es una empresa ficticia. La identidad de este entregable, para que se pu
 El favicon es un marcador de 16 píxeles con esos colores. Ruta de mejora: reemplazarlo cuando la marca quede aprobada.
 
 Los insumos de la sesión (`faro-ai-platform-m1.md`, `contexto-agentes-para-plataforma.md`, `00-LEEME.md`, `01-prompt-inicial.md` y el `imprevistos.yaml` de la raíz) no se versionan. El `.gitignore` que los excluye quedó autorizado al aprobar el plan. `AGENTS.md` tampoco se versiona: queda solo en la máquina local, por decisión del 29 de octubre de 2026.
+
+## ADR-008 · Voz apagada para estudiantes en M1
+
+La prueba del 29 de octubre de 2026 midió el costo. Una conversación corta de texto gastó unos 120 créditos. La de voz, con Cliente Negocio, gastó 1374 créditos en 63 segundos: 1047 de la llamada y 327 del modelo. Para M1 la voz queda apagada para los estudiantes.
+
+El interruptor es `voz_habilitada` en la fila única de la cohorte. El default es falso. Con falso, la pantalla de conversación solo ofrece texto. Si un estudiante pide modo voz, el servidor responde 403 y no pide el token a ElevenLabs. El instructor puede encenderlo desde el panel. El aviso del panel muestra esas dos mediciones y dice que, al encenderlo, la voz queda disponible para toda la cohorte.
+
+Un instructor sigue pudiendo pedir el token aunque el interruptor esté apagado: el rechazo del servidor es para el rol estudiante. La pantalla tampoco le ofrece la voz mientras el interruptor está apagado.

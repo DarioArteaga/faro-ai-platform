@@ -23,3 +23,20 @@ export async function cambiarModulo(modulo: string): Promise<void> {
     update: { modulo },
   })
 }
+
+export async function obtenerVozHabilitada(): Promise<boolean> {
+  const fila = await db().cohorte.upsert({
+    where: { id: ID_COHORTE },
+    create: { id: ID_COHORTE, modulo: "M1", vozHabilitada: false },
+    update: {},
+  })
+  return fila.vozHabilitada
+}
+
+export async function cambiarVozHabilitada(vozHabilitada: boolean): Promise<void> {
+  await db().cohorte.upsert({
+    where: { id: ID_COHORTE },
+    create: { id: ID_COHORTE, modulo: "M1", vozHabilitada },
+    update: { vozHabilitada },
+  })
+}

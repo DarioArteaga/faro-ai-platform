@@ -8,7 +8,7 @@ import { exigirClaveDelModulo } from "@/lib/imprevistos"
 import { slugificar } from "@/lib/slug"
 import { correoNormalizado, textoCorto } from "@/lib/validar"
 import type { SesionUsuario } from "@/lib/autorizacion"
-import { obtenerModulo } from "@/servicios/cohorte"
+import { obtenerModulo, obtenerVozHabilitada } from "@/servicios/cohorte"
 
 export type Aviso =
   | "activado"
@@ -140,11 +140,12 @@ export async function darDeBajaEstudiante(id: string): Promise<Aviso> {
 
 export async function datosPanel(): Promise<{
   modulo: Modulo
+  voz_habilitada: boolean
   imprevistos: { clave: string; modulo: string; sostiene: string; equipos: string[] }[]
   equipos: EquipoPanel[]
   cobertura: { slug: string; nombre: string; interlocutores: FilaCobertura[] }[]
 }> {
-  const modulo = await obtenerModulo()
+  const [modulo, vozHabilitada] = await Promise.all([obtenerModulo(), obtenerVozHabilitada()])
   const catalogo = leerImprevistos()
   const interlocutores = casoActivo().interlocutores
   const equipos = await db().equipo.findMany({
@@ -165,6 +166,7 @@ export async function datosPanel(): Promise<{
   })
   return {
     modulo,
+    voz_habilitada: vozHabilitada,
     imprevistos: catalogo.orden
       .filter((clave) => catalogo.porClave[clave]?.modulo === modulo)
       .map((clave) => {

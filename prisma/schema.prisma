@@ -8,8 +8,9 @@ datasource db {
 }
 
 model Cohorte {
-  id     String @id
-  modulo String
+  id            String  @id
+  modulo        String
+  vozHabilitada Boolean @default(false) @map("voz_habilitada")
 
   @@map("cohorte")
 }

@@ -3,6 +3,7 @@
 Table cohorte {
   id varchar [pk, note: 'Fila única, valor principal']
   modulo varchar [not null, note: 'M1, M2, M3 o M4']
+  voz_habilitada boolean [not null, default: false, note: 'La voz de la cohorte. Falso en M1']
 }
 
 Table equipos {

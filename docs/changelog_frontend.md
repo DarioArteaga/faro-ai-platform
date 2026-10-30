@@ -1,5 +1,8 @@
 # Cambios del frontend
 
+- [2026-10-29] [FEAT] Con la voz apagada, la conversación solo ofrece texto. El instructor la enciende desde el panel, con el aviso del costo.
+  Archivos modificados: src/componentes/conversacion-cliente.tsx, src/app/(plataforma)/conversacion/[slug]/page.tsx, src/app/(plataforma)/instructor/page.tsx, src/acciones/instructor.ts
+
 - [2026-10-29] [FIX] La transcripción en vivo muestra lo que escribe el estudiante, y el cierre reintenta el resumen hasta los 25 segundos.
   Archivos modificados: src/componentes/conversacion-cliente.tsx, src/lib/conversacion-viva.ts, tests/conversacion-viva.test.ts
 

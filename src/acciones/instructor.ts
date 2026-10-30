@@ -4,7 +4,7 @@ import { redirect } from "next/navigation"
 
 import { registrarFalloDeDatos } from "@/lib/db"
 import { ErrorHttp } from "@/lib/errores"
-import { cambiarModulo } from "@/servicios/cohorte"
+import { cambiarModulo, cambiarVozHabilitada } from "@/servicios/cohorte"
 import {
   activarImprevisto,
   crearEquipo,
@@ -36,6 +36,13 @@ async function correr(accion: () => Promise<Aviso>, contexto: string): Promise<v
 
 export async function cambiarModuloAccion(formData: FormData): Promise<void> {
   await correr(() => cambiarModulo(texto(formData, "modulo")).then(() => "guardado" as const), "modulo")
+}
+
+export async function cambiarVozAccion(formData: FormData): Promise<void> {
+  await correr(
+    () => cambiarVozHabilitada(formData.get("voz_habilitada") === "si").then(() => "guardado" as const),
+    "voz",
+  )
 }
 
 export async function activarAccion(formData: FormData): Promise<void> {

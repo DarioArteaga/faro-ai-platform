@@ -6,6 +6,7 @@
 /imprevistos.yaml
 # Reglas del proyecto. Quedan solo en esta máquina.
 AGENTS.md
+HANDOFF.md
 
 /node_modules/
 /.next/
