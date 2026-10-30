@@ -1,5 +1,8 @@
 # Cambios del backend
 
+- [2026-10-29] [FIX] Un cierre atrasado no reemplaza el resumen de una conversación posterior del mismo equipo y agente.
+  Archivos modificados: src/servicios/conversaciones.ts, docs/architecture_decisions.md
+
 - [2026-10-29] [SEC] Una conversación solo se registra, se lee y alimenta el resumen si ElevenLabs la atribuye a ese usuario y a ese agente, y si el registro nace de una sesión vigente.
   Archivos modificados: src/lib/autorizacion.ts, src/lib/elevenlabs.ts, src/servicios/conversaciones.ts, tests/autorizacion.test.ts, tests/repositorio.test.ts, docs/architecture_decisions.md, .gitignore
 

@@ -277,6 +277,15 @@ export async function cerrarConversacion(usuario: SesionUsuario, conversationId:
   }
   const interlocutor = interlocutorPorSlug(fila.agenteSlug)
   if (!interlocutor) throw new ErrorHttp(404, "No encontramos esa conversación.")
+  const posterior = await db().conversacion.findFirst({
+    where: {
+      equipoId: fila.equipoId,
+      agenteSlug: fila.agenteSlug,
+      iniciadaAt: { gt: fila.iniciadaAt },
+    },
+    select: { id: true },
+  })
+  if (posterior) return { guardado: true }
   await fichaPropia(id, fila.usuarioId, interlocutor.agent_id, false)
   try {
     const texto = await pedirResumen(id)

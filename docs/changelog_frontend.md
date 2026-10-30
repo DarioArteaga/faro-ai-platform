@@ -1,5 +1,8 @@
 # Cambios del frontend
 
+- [2026-10-29] [FIX] La transcripción en vivo muestra lo que escribe el estudiante, y el cierre reintenta el resumen hasta los 25 segundos.
+  Archivos modificados: src/componentes/conversacion-cliente.tsx, src/lib/conversacion-viva.ts, tests/conversacion-viva.test.ts
+
 - [2026-10-29] [FEAT] El plan B separa el índice de cada equipo y la página de cada interlocutor, con un solo widget por página.
   Archivos modificados: src/lib/plan-b/html.ts, src/lib/plan-b/generar.ts, tests/plan-b.test.ts, plan-b/index.html, plan-b/sitemap.xml, docs/architecture_c4.md, docs/architecture_decisions.md
 

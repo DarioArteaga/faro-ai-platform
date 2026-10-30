@@ -52,7 +52,7 @@ Si el webhook ya cubre esas sesiones, en `fde-engagement-kit` haría falta dejar
 
 Al empezar se guarda el id de ElevenLabs con el equipo, el estudiante, el agente, el módulo, el modo y el texto de imprevistos que se armó para esa sesión. Ese id solo se acepta si hay una sesión vigente para ese interlocutor y ese modo, y si ElevenLabs atribuye la conversación al mismo usuario (`user_id`) y al mismo agente (`agent_id`). Si no coinciden, o si ElevenLabs no tiene la conversación, la respuesta es 404. La misma comprobación corre al leer la transcripción y al guardar el resumen, para no archivarla ni usarla como `resumen_previo`. La transcripción se lee con ese id. La plataforma no la reconstruye. La URL firmada y el token no se escriben en los logs.
 
-El resumen sale de `transcript_summary` en `GET /v1/convai/conversations/{id}/summary`, cuando la conversación ya cerró. Si viene vacío o el pedido falla, la siguiente conversación arranca con `resumen_previo` en `ninguno`. No se agrega un generador propio.
+El resumen sale de `transcript_summary` en `GET /v1/convai/conversations/{id}/summary`, cuando la conversación ya cerró. ElevenLabs lo arma después de cortar, así que el cliente lo pide al cortar y, si todavía no está, otra vez a los 5, 12 y 25 segundos. Se detiene en cuanto queda guardado. Un cierre atrasado no reemplaza el resumen si ese equipo ya empezó una conversación posterior con el mismo agente. Si al cabo de esa espera sigue vacío o el pedido falla, la fila no se escribe. Al empezar otra con ese agente, si la fila sigue vacía, se intenta leer el resumen otra vez. Si tampoco está, `resumen_previo` sale como `ninguno`. No se agrega un generador propio.
 
 ## ADR-006 · Plan B local y despliegue diferido
 

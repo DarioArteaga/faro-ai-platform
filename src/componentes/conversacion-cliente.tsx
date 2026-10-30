@@ -5,6 +5,7 @@ import type { MessagePayload } from "@elevenlabs/client"
 import { useRef, useState } from "react"
 import { z } from "zod"
 
+import { anexarLinea, pausaSiguiente } from "@/lib/conversacion-viva"
 import { logCliente } from "@/lib/log-cliente"
 
 const respuestaSesion = z.object({
@@ -21,9 +22,9 @@ const respuestaSesion = z.object({
 })
 
 const respuestaError = z.object({ detail: z.string() })
+const respuestaCierre = z.object({ guardado: z.boolean() })
 
 type Modo = "texto" | "voz"
-type Linea = { rol: string; texto: string }
 
 async function detalleDe(respuesta: Response): Promise<string> {
   const json: unknown = await respuesta.json().catch(() => null)
@@ -43,7 +44,7 @@ function Panel({
   onModo: (modo: Modo) => void
 }): React.ReactElement {
   const idRef = useRef("")
-  const [lineas, setLineas] = useState<Linea[]>([])
+  const [lineas, setLineas] = useState<{ rol: string; texto: string }[]>([])
   const [borrador, setBorrador] = useState("")
   const [error, setError] = useState("")
   const [ocupado, setOcupado] = useState(false)
@@ -62,16 +63,35 @@ function Panel({
     onDisconnect: () => {
       const id = idRef.current
       if (!id) return
-      void fetch(`/api/v1/conversaciones/${id}/cerrar`, { method: "POST" })
-      window.setTimeout(() => {
+      const intentar = (indice: number): void => {
         void fetch(`/api/v1/conversaciones/${id}/cerrar`, { method: "POST" })
-      }, 3000)
+          .then(async (respuesta) => {
+            const json: unknown = await respuesta.json().catch(() => null)
+            return respuestaCierre.safeParse(json).data?.guardado ?? false
+          })
+          .then((guardado) => {
+            const pausa = pausaSiguiente(indice, guardado)
+            if (pausa !== null) {
+              window.setTimeout(() => intentar(indice + 1), pausa)
+              return
+            }
+            if (!guardado) setError("La conversación quedó guardada. El resumen todavía no está listo.")
+          })
+          .catch(() => {
+            const pausa = pausaSiguiente(indice, false)
+            if (pausa !== null) window.setTimeout(() => intentar(indice + 1), pausa)
+            else setError("La conversación quedó guardada. El resumen todavía no está listo.")
+          })
+      }
+      intentar(0)
     },
     onMessage: (mensaje: MessagePayload) => {
-      setLineas((previas) => [
-        ...previas,
-        { rol: mensaje.role === "user" ? "Tú" : nombre, texto: mensaje.message },
-      ])
+      setLineas((previas) =>
+        anexarLinea(previas, {
+          rol: mensaje.role === "user" ? "Tú" : nombre,
+          texto: mensaje.message,
+        }),
+      )
     },
     onError: (mensaje) => {
       logCliente("error", "fallo de conversacion", { detalle: mensaje.slice(0, 180) })
@@ -162,6 +182,7 @@ function Panel({
             evento.preventDefault()
             const texto = borrador.trim()
             if (!texto) return
+            setLineas((previas) => anexarLinea(previas, { rol: "Tú", texto }))
             conversacion.sendUserMessage(texto)
             setBorrador("")
           }}
