@@ -1,8 +1,10 @@
 # Catálogo de imprevistos. Faro envía las claves en imprevistos_activos, separadas por "; ".
-# "ninguno" significa que no hay ninguno. El ensamblador copia a cada agente solo las suyas.
+# "ninguno" significa que no hay ninguno. El ensamblador copia a cada agente solo las de su caso y su rol.
 # El campo modulo documenta cuándo las dispara el instructor. La clave basta para sostenerlas.
+# Las claves de Energía del Litoral no llevan prefijo. Las de Seguros Pampa empiezan por sp_.
 
 m1_facturacion:
+  caso: energia_del_litoral
   agente: cliente_negocio
   modulo: M1
   sostiene: >-
@@ -10,12 +12,14 @@ m1_facturacion:
     Ya lo planteó: lo sostiene y lo pide como parte del alcance.
 
 m2_consulta_por_direccion:
+  caso: energia_del_litoral
   agente: cliente_negocio
   modulo: M2
   sostiene: >-
     Marcos dice que a oscuras nadie tiene la factura y pide que la consulta sea por dirección.
 
 m2_demo_interna:
+  caso: energia_del_litoral
   agente: cliente_negocio
   modulo: M2
   sostiene: >-
@@ -23,25 +27,78 @@ m2_demo_interna:
     Si le preguntan qué quiere ver o cuál es el siguiente paso, la menciona.
 
 m2_comunicacion_institucional:
+  caso: energia_del_litoral
   agente: cliente_negocio
   modulo: M2
   sostiene: >-
     Laura sostiene que Comunicación Institucional quiere aprobar los mensajes en los cortes masivos.
 
 m3_limite_tormenta:
+  caso: energia_del_litoral
   agente: cliente_it
   modulo: M3
   sostiene: >-
     Rubén sostiene que, durante una tormenta, la réplica de SIGEC está rechazando consultas por el límite.
 
 m3_auditoria:
+  caso: energia_del_litoral
   agente: cliente_it
   modulo: M3
   sostiene: >-
     Rubén exige auditoría de cada consulta y credenciales que pueda revocar. Sin eso no hay producción.
 
 m4_ahorro:
+  caso: energia_del_litoral
   agente: cliente_negocio
   modulo: M4
   sostiene: >-
     Claudia pregunta cuánto ahorra el piloto y objeta que los resultados se atribuyan al piloto.
+
+sp_m1_hogar:
+  caso: seguros_pampa
+  agente: cliente_negocio
+  modulo: M1
+  sostiene: >-
+    Martín quiere sumar los siniestros de hogar al alcance.
+    El piloto cubre solo autos; hogar queda para la fase 2.
+
+sp_m2_campos_crm:
+  caso: seguros_pampa
+  agente: cliente_negocio
+  modulo: M2
+  sostiene: >-
+    Paula dice que necesita los campos como los carga ella.
+    La salida tiene que ser estructurada, con los campos del CRM.
+
+sp_m2_fraude:
+  caso: seguros_pampa
+  agente: cliente_negocio
+  modulo: M2
+  sostiene: >-
+    El área de Fraude teme que automatizar sume fraude.
+    Hay que dar señales de alerta para revisión humana, nunca decisiones.
+
+sp_m3_campos_obligatorios:
+  caso: seguros_pampa
+  agente: cliente_it
+  modulo: M3
+  sostiene: >-
+    El CRM rechaza registros por campos obligatorios que no están documentados.
+    Hay que validar antes de escribir y pedir los cambios con tiempo.
+
+sp_m3_fotos:
+  caso: seguros_pampa
+  agente: cliente_it
+  modulo: M3
+  sostiene: >-
+    Valeria exige que las fotos no salgan de su almacenamiento.
+    Se guardan en el almacenamiento del cliente y se registran los accesos.
+
+sp_m4_costo_demora:
+  caso: seguros_pampa
+  agente: cliente_negocio
+  modulo: M4
+  sostiene: >-
+    Finanzas pregunta cuánto cuesta cada día de demora.
+    El ciclo tiene que bajar de [[cifra:sp_dias_ciclo]] días hacia menos de [[cifra:sp_plazo_dias]],
+    y hay que contar las horas de liquidador ahorradas.

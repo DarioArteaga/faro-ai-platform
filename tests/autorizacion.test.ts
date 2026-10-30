@@ -1,12 +1,15 @@
 import { describe, expect, it } from "vitest"
 
 import {
+  destinoDeConversacion,
   duenoCoincide,
   puedeIniciarConversacion,
   puedePedirTokenDeVoz,
+  puedeVerCaso,
   puedeVerConversacion,
   type SesionUsuario,
 } from "@/lib/autorizacion"
+import { NOMBRE_EQUIPO_DEMO } from "@/lib/constantes"
 import { duenoDesdePayload, fichaDesde } from "@/lib/elevenlabs"
 
 const estudiante: SesionUsuario = {
@@ -27,9 +30,35 @@ describe("autorización", () => {
     expect(puedePedirTokenDeVoz("instructor", true)).toBe(true)
   })
   it("niega la credencial sin sesión y sin equipo", () => {
-    expect(puedeIniciarConversacion(null)).toBe(401)
-    expect(puedeIniciarConversacion({ ...estudiante, equipoId: null, equipoNombre: null })).toBe(403)
-    expect(puedeIniciarConversacion(estudiante)).toBeNull()
+    expect(puedeIniciarConversacion(null, "curso")).toBe(401)
+    expect(puedeIniciarConversacion({ ...estudiante, equipoId: null, equipoNombre: null }, "curso")).toBe(403)
+    expect(puedeIniciarConversacion(estudiante, "curso")).toBeNull()
+  })
+
+  it("guarda Seguros Pampa en la demo aunque el instructor tenga equipo", () => {
+    const instructor = { ...estudiante, rol: "instructor" as const }
+    const destino = destinoDeConversacion(instructor, "instructor")
+    expect(destino).toEqual({ tipo: "demo", equipoNombre: NOMBRE_EQUIPO_DEMO })
+    expect(destino).not.toMatchObject({ equipoId: instructor.equipoId })
+    expect(destinoDeConversacion({ ...instructor, equipoId: null, equipoNombre: null }, "instructor")).toEqual({
+      tipo: "demo",
+      equipoNombre: NOMBRE_EQUIPO_DEMO,
+    })
+    expect(destinoDeConversacion(instructor, "curso")).toEqual({
+      tipo: "propio",
+      equipoId: instructor.equipoId,
+      equipoNombre: instructor.equipoNombre,
+    })
+  })
+
+  it("reserva Seguros Pampa al instructor, aunque no tenga equipo", () => {
+    const instructor = { ...estudiante, rol: "instructor" as const, equipoId: null, equipoNombre: null }
+    expect(puedeVerCaso("estudiante", "instructor")).toBe(false)
+    expect(puedeVerCaso("instructor", "instructor")).toBe(true)
+    expect(puedeVerCaso("estudiante", "curso")).toBe(true)
+    expect(puedeIniciarConversacion(estudiante, "instructor")).toBe(403)
+    expect(puedeIniciarConversacion(instructor, "instructor")).toBeNull()
+    expect(puedeIniciarConversacion(instructor, "curso")).toBe(403)
   })
 
   it("no revela una conversación de otro equipo", () => {

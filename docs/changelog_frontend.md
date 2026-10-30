@@ -1,5 +1,11 @@
 # Cambios del frontend
 
+- [2026-10-30] [FIX] Los imprevistos de Seguros Pampa se activan solo en Demo del instructor. Las tarjetas avisan que no entran al historial de los equipos.
+  Archivos modificados: src/app/(plataforma)/interlocutores/page.tsx, src/app/(plataforma)/instructor/page.tsx
+
+- [2026-10-30] [FEAT] Seguros Pampa solo aparece para el instructor. El panel separa los imprevistos de cada caso.
+  Archivos modificados: src/app/(plataforma)/interlocutores/page.tsx, src/app/(plataforma)/conversacion/[slug]/page.tsx, src/app/(plataforma)/instructor/page.tsx
+
 - [2026-10-29] [FEAT] Con la voz apagada, la conversación solo ofrece texto. El instructor la enciende desde el panel, con el aviso del costo.
   Archivos modificados: src/componentes/conversacion-cliente.tsx, src/app/(plataforma)/conversacion/[slug]/page.tsx, src/app/(plataforma)/instructor/page.tsx, src/acciones/instructor.ts
 

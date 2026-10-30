@@ -32,9 +32,9 @@ Identificadores: el equipo se expone por `slug`, el usuario por UUID y la conver
 
 ## ADR-004 · Imprevistos leídos del YAML
 
-`config/imprevistos.yaml` es la copia de configuración del kit. Las claves no se escriben en el código. El servidor valida agente, módulo y texto, y exige claves con la forma `[a-z][a-z0-9_]*`.
+`config/imprevistos.yaml` es la copia de configuración del kit. Las claves no se escriben en el código. El servidor valida caso, agente, módulo y texto, y exige claves con la forma `[a-z][a-z0-9_]*`. Desde el ADR-009 cada clave declara su caso.
 
-A ElevenLabs se le envía un solo texto: las claves activas de ese equipo, en el orden del archivo, unidas por `; `. Si no hay ninguna, el valor es `ninguno`. Una clave guardada que ya no está en el catálogo no se envía y no bloquea la conversación. Activar una clave desconocida, o de otro módulo que el actual, sí falla.
+A ElevenLabs se le envía un solo texto: las claves activas de ese equipo y de ese caso, en el orden del archivo, unidas por `; `. Si no hay ninguna, el valor es `ninguno`. Una clave guardada que ya no está en el catálogo no se envía y no bloquea la conversación. Activar una clave desconocida, o de otro módulo que el actual, sí falla. Las de un caso no viajan al otro.
 
 El panel le muestra al instructor la clave, el módulo y el texto `sostiene`. Ese texto no sale en las pantallas del estudiante ni en el plan B.
 
@@ -83,3 +83,15 @@ La prueba del 29 de octubre de 2026 midió el costo. Una conversación corta de 
 El interruptor es `voz_habilitada` en la fila única de la cohorte. El default es falso. Con falso, la pantalla de conversación solo ofrece texto. Si un estudiante pide modo voz, el servidor responde 403 y no pide el token a ElevenLabs. El instructor puede encenderlo desde el panel. El aviso del panel muestra esas dos mediciones y dice que, al encenderlo, la voz queda disponible para toda la cohorte.
 
 Un instructor sigue pudiendo pedir el token aunque el interruptor esté apagado: el rechazo del servidor es para el rol estudiante. La pantalla tampoco le ofrece la voz mientras el interruptor está apagado.
+
+## ADR-009 · Seguros Pampa solo para el instructor
+
+Seguros Pampa convive con Energía del Litoral. Los cuatro agentes ya están publicados en el kit (su ADR-020), con `enable_auth` en verdadero. Este repositorio no los modifica. En `config/casos.yaml` el caso lleva `audiencia: instructor`. Energía del Litoral sigue en `audiencia: curso` y es el único que arma el plan B y la tabla de cobertura.
+
+Un estudiante no ve las tarjetas de Seguros Pampa. Si pide credencial para uno de esos agentes, la respuesta es 403 y no se llama a ElevenLabs. Un slug que no existe, o un caso inactivo, sigue en 404. Los slugs de este caso llevan el prefijo `sp_`, como en el kit, para no pisar los de Energía del Litoral.
+
+El instructor puede abrir esas conversaciones aunque su cuenta no tenga equipo. Aunque tenga uno, la fila se guarda en el equipo reservado `Demo del instructor`, slug `demo-del-instructor`. La variable `equipo`, los imprevistos y el resumen previo salen de ese equipo, no del equipo asignado. Por eso la conversación no aparece en el historial de los estudiantes. Ese equipo no entra al alta de estudiantes, ni a «todos los equipos», ni a la cobertura. En el panel, los imprevistos de Seguros Pampa se activan solo ahí. Energía del Litoral sigue usando el equipo de quien conversa.
+
+`config/imprevistos.yaml` es la copia del kit, con el campo `caso`. El panel separa los imprevistos por caso. A la conversación solo se envían las claves activas de ese caso. Los marcadores `[[cifra:...]]` se muestran tal cual: las cifras viven en el kit y esta aplicación no las resuelve.
+
+El kickoff de M1 es el martes 17 de noviembre de 2026. La clase 1 es el jueves 19 de noviembre de 2026.

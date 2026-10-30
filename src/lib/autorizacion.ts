@@ -1,3 +1,5 @@
+import { NOMBRE_EQUIPO_DEMO, type Audiencia } from "@/lib/constantes"
+
 export type Rol = "estudiante" | "instructor"
 
 export type SesionUsuario = {
@@ -16,10 +18,33 @@ export function puedePedirTokenDeVoz(rol: Rol, vozHabilitada: boolean): boolean 
   return vozHabilitada
 }
 
-export function puedeIniciarConversacion(usuario: SesionUsuario | null): 401 | 403 | null {
+/** El caso de audiencia instructor no se muestra ni se abre para un estudiante. */
+export function puedeVerCaso(rol: Rol, audiencia: Audiencia): boolean {
+  return audiencia === "curso" || rol === "instructor"
+}
+
+export function puedeIniciarConversacion(usuario: SesionUsuario | null, audiencia: Audiencia): 401 | 403 | null {
   if (!usuario) return 401
-  if (!usuario.equipoId || !usuario.equipoNombre) return 403
+  if (!puedeVerCaso(usuario.rol, audiencia)) return 403
+  if (audiencia === "curso" && (!usuario.equipoId || !usuario.equipoNombre)) return 403
   return null
+}
+
+export type DestinoConversacion =
+  | { tipo: "demo"; equipoNombre: string }
+  | { tipo: "propio"; equipoId: string; equipoNombre: string }
+
+/** Seguros Pampa no usa el equipo del instructor: así no entra al historial de los estudiantes. */
+export function destinoDeConversacion(
+  usuario: SesionUsuario | null,
+  audiencia: Audiencia,
+): DestinoConversacion | 401 | 403 {
+  const codigo = puedeIniciarConversacion(usuario, audiencia)
+  if (codigo !== null) return codigo
+  if (!usuario) return 401
+  if (audiencia === "instructor") return { tipo: "demo", equipoNombre: NOMBRE_EQUIPO_DEMO }
+  if (!usuario.equipoId || !usuario.equipoNombre) return 403
+  return { tipo: "propio", equipoId: usuario.equipoId, equipoNombre: usuario.equipoNombre }
 }
 
 export function puedeLeerConversacion(usuario: SesionUsuario, equipoId: string): boolean {

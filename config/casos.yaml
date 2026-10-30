@@ -1,9 +1,13 @@
 # Texto público de las tarjetas e identificadores de los agentes ya publicados.
-# Un caso activo. Seguros Pampa se suma aquí, sin cambiar el código.
+# audiencia curso: lo ve el estudiante. audiencia instructor: solo el instructor.
+# caso coincide con el campo caso de config/imprevistos.yaml.
+
 casos:
   - slug: energia-del-litoral
     nombre: Energía del Litoral
     activo: true
+    audiencia: curso
+    caso: energia_del_litoral
     interlocutores:
       - slug: cliente_negocio
         nombre: Cliente Negocio
@@ -25,3 +29,29 @@ casos:
         quien: Andrés Villalba, responsable de producto y go-to-market
         importa: Qué parte de lo construido sirve para otros clientes
         agent_id: agent_3701m5zcsvefeb5s6s66s6ffd6er
+  - slug: seguros-pampa
+    nombre: Seguros Pampa
+    activo: true
+    audiencia: instructor
+    caso: seguros_pampa
+    interlocutores:
+      - slug: sp_cliente_negocio
+        nombre: Cliente Negocio
+        quien: Martín Quiroga, con Paula Herrera y la Gerencia de Finanzas
+        importa: Que los siniestros dejen de tardar
+        agent_id: agent_2601m66rfk9gea7vy4mc61krrf35
+      - slug: sp_cliente_it
+        nombre: Cliente IT
+        quien: Valeria Ortiz, Jefa de Seguridad Informática
+        importa: Que los datos no salgan de donde deben estar, y que los accesos sean mínimos
+        agent_id: agent_9701m66rk40yfbn9prbkx0vsjr5d
+      - slug: sp_account_executive
+        nombre: Account Executive de Faro AI
+        quien: Sofía Medrano, dueña comercial de la cuenta
+        importa: La renovación
+        agent_id: agent_5201m66rk5x2ehjs4tnwkjcgrhy3
+      - slug: sp_producto_gtm
+        nombre: Producto/GTM de Faro AI
+        quien: Andrés Villalba, responsable de producto y go-to-market
+        importa: Qué parte de lo construido sirve para otras aseguradoras
+        agent_id: agent_4401m66rk7nse59vctrn8b2999ry

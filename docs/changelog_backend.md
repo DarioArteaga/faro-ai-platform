@@ -1,5 +1,11 @@
 # Cambios del backend
 
+- [2026-10-30] [FIX] Una conversación de Seguros Pampa se guarda en el equipo Demo del instructor aunque el instructor tenga equipo asignado.
+  Archivos modificados: src/lib/autorizacion.ts, src/servicios/conversaciones.ts, tests/autorizacion.test.ts, docs/architecture_decisions.md, docs/architecture_c4.md
+
+- [2026-10-30] [FEAT] Seguros Pampa queda reservado al instructor. Sin equipo, la variable equipo de esa demo es «Demo del instructor». Un estudiante recibe 403 y no se pide credencial.
+  Archivos modificados: config/casos.yaml, config/imprevistos.yaml, src/lib/catalogo.ts, src/lib/autorizacion.ts, src/lib/constantes.ts, src/lib/imprevistos.ts, src/servicios/conversaciones.ts, src/servicios/instructor.ts, tests/autorizacion.test.ts, tests/casos.test.ts, tests/imprevistos.test.ts, docs/architecture_decisions.md, docs/architecture_c4.md, docs/index.md
+
 - [2026-10-29] [FEAT] La cohorte tiene el interruptor `voz_habilitada`, apagado por defecto. Un estudiante no recibe token de voz mientras esté apagado.
   Archivos modificados: prisma/schema.prisma, prisma/migrations/20261030031000_voz_habilitada/migration.sql, prisma/migrations/20261030031000_voz_habilitada/down.sql, docs/schema.dbml, docs/architecture_decisions.md, docs/architecture_c4.md, src/lib/autorizacion.ts, src/servicios/cohorte.ts, src/servicios/conversaciones.ts, src/servicios/instructor.ts, src/servicios/rutas-instructor.ts, src/app/api/v1/instructor/voz/route.ts, tests/autorizacion.test.ts
 

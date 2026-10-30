@@ -13,7 +13,7 @@ import {
   editarEstudianteAccion,
   renombrarEquipoAccion,
 } from "@/acciones/instructor"
-import { MODULOS } from "@/lib/constantes"
+import { MODULOS, NOMBRE_EQUIPO_DEMO, SLUG_EQUIPO_DEMO } from "@/lib/constantes"
 import { formatoFecha } from "@/lib/fecha"
 import { leerPaginacion } from "@/lib/paginacion"
 import { listarTodas } from "@/servicios/conversaciones"
@@ -90,32 +90,42 @@ export default async function Instructor({
         </form>
       </section>
 
-      <section>
-        <h2>Imprevistos de {panel.modulo}</h2>
-        {panel.imprevistos.length === 0 ? <p>Este módulo no tiene imprevistos en el catálogo.</p> : null}
-        {panel.imprevistos.map((item) => (
-          <article key={item.clave} className="tarjeta">
-            <h3>{item.clave}</h3>
-            <p>{item.sostiene}</p>
-            <p>{item.equipos.length > 0 ? `Activo en: ${item.equipos.join(", ")}` : "Todavía no está activo."}</p>
-            <form action={activarAccion}>
-              <input type="hidden" name="clave" value={item.clave} />
-              <label htmlFor={`equipo-${item.clave}`}>
-                Activar para
-                <select id={`equipo-${item.clave}`} name="equipo_slug" defaultValue="todos">
-                  <option value="todos">Todos los equipos</option>
-                  {panel.equipos.map((equipo) => (
-                    <option key={equipo.slug} value={equipo.slug}>
-                      {equipo.nombre}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <button type="submit">Activar</button>
-            </form>
-          </article>
-        ))}
-      </section>
+      {panel.imprevistos.map((grupo) => (
+        <section key={grupo.caso}>
+          <h2>Imprevistos de {grupo.nombre}</h2>
+          <p>Módulo {panel.modulo}.</p>
+          {grupo.claves.length === 0 ? <p>Este módulo no tiene imprevistos en este caso.</p> : null}
+          {grupo.claves.map((item) => (
+            <article key={item.clave} className="tarjeta">
+              <h3>{item.clave}</h3>
+              <p>{item.sostiene}</p>
+              <p>{item.equipos.length > 0 ? `Activo en: ${item.equipos.join(", ")}` : "Todavía no está activo."}</p>
+              <form action={activarAccion}>
+                <input type="hidden" name="clave" value={item.clave} />
+                {grupo.audiencia === "instructor" ? (
+                  <>
+                    <input type="hidden" name="equipo_slug" value={SLUG_EQUIPO_DEMO} />
+                    <p>Se activa en {NOMBRE_EQUIPO_DEMO}.</p>
+                  </>
+                ) : (
+                  <label htmlFor={`equipo-${item.clave}`}>
+                    Activar para
+                    <select id={`equipo-${item.clave}`} name="equipo_slug" defaultValue="todos">
+                      <option value="todos">Todos los equipos</option>
+                      {panel.equipos.map((equipo) => (
+                        <option key={equipo.slug} value={equipo.slug}>
+                          {equipo.nombre}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                )}
+                <button type="submit">Activar</button>
+              </form>
+            </article>
+          ))}
+        </section>
+      ))}
 
       <section>
         <h2>Cobertura</h2>

@@ -11,7 +11,7 @@ Person(estudiante, "Estudiante", "Conversa con los interlocutores de su equipo y
 Person(instructor, "Instructor", "Cambia el modulo, activa imprevistos y revisa cobertura y transcripciones")
 System(faro, "Faro AI", "Front del curso para conversar con los interlocutores y operar el modulo")
 System_Ext(google, "Google", "Identidad de las cuentas")
-System_Ext(eleven, "ElevenLabs Agents", "Ejecuta los cuatro interlocutores ya publicados")
+System_Ext(eleven, "ElevenLabs Agents", "Ejecuta los interlocutores publicados")
 Rel(estudiante, faro, "Usa", "HTTPS")
 Rel(instructor, faro, "Administra", "HTTPS")
 Rel(faro, google, "Valida la cuenta", "OAuth 2.0")
@@ -21,10 +21,10 @@ Rel(faro, eleven, "Inicia conversaciones y lee transcripciones", "HTTPS")
 | Elemento | Responsabilidad |
 | --- | --- |
 | Estudiante | Entra con su cuenta, conversa y lee el historial de su equipo |
-| Instructor | Define el módulo, activa imprevistos, carga equipos y lee cualquier transcripción |
+| Instructor | Define el módulo, activa imprevistos de cada caso, carga equipos y lee cualquier transcripción |
 | Faro AI | Marca, acceso, variables de cada conversación y panel |
 | Google | Prueba la identidad. No guarda equipos ni conversaciones |
-| ElevenLabs Agents | Corre los interlocutores. La configuración de los agentes vive en el kit, no aquí |
+| ElevenLabs Agents | Corre los interlocutores publicados. Cuatro del curso y cuatro de Seguros Pampa, estos últimos solo para el instructor. La configuración vive en el kit, no aquí |
 
 ## 2. Contenedores
 
@@ -65,7 +65,7 @@ title Componentes de la aplicacion
 Container_Boundary(app, "Aplicacion") {
   Component(interfaz, "Interfaz", "React", "Pantallas del estudiante y del instructor")
   Component(sesion, "Sesion", "Auth.js", "Google, cookie y lista de acceso")
-  Component(catalogo, "Catalogo", "YAML", "Caso activo e imprevistos")
+  Component(catalogo, "Catalogo", "YAML", "Casos e imprevistos")
   Component(conversaciones, "Conversaciones", "Route handlers", "Credencial, variables, transcripcion y resumen")
   Component(panel, "Panel", "Route handlers", "Modulo, voz, activaciones, cobertura y equipos")
 }
@@ -74,14 +74,14 @@ Rel(interfaz, conversaciones, "Inicia y consulta")
 Rel(interfaz, panel, "Administra")
 Rel(conversaciones, catalogo, "Arma las variables")
 Rel(panel, catalogo, "Lista las claves")
-Rel(conversaciones, sesion, "Comprueba equipo")
+Rel(conversaciones, sesion, "Comprueba equipo y audiencia")
 Rel(panel, sesion, "Exige rol instructor")
 ```
 
 | Componente | Responsabilidad |
 | --- | --- |
-| Interfaz | Tarjetas, conversación en texto y en voz si la cohorte la habilita, historial y formularios del instructor |
+| Interfaz | Tarjetas del caso de curso y, para el instructor, las de Seguros Pampa. Conversación en texto y en voz si la cohorte la habilita, historial y formularios del instructor |
 | Sesión | Login con Google y rechazo de correos que no están en la lista |
-| Catálogo | Lee `config/casos.yaml` y `config/imprevistos.yaml` |
-| Conversaciones | Pide la credencial, guarda el id y lee transcripción y resumen |
-| Panel | Cambia el módulo y la voz de la cohorte, activa claves, muestra cobertura y administra equipos |
+| Catálogo | Lee `config/casos.yaml` y `config/imprevistos.yaml`. Separa el caso de curso del caso del instructor |
+| Conversaciones | Pide la credencial, guarda el id y lee transcripción y resumen. Niega Seguros Pampa a un estudiante y archiva esas conversaciones en el equipo de demo |
+| Panel | Cambia el módulo y la voz de la cohorte, activa claves de cada caso, muestra cobertura y administra equipos |

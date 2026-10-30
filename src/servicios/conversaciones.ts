@@ -1,24 +1,26 @@
 import { Prisma } from "@prisma/client"
 
 import {
+  destinoDeConversacion,
   duenoCoincide,
   puedeIniciarConversacion,
   puedePedirTokenDeVoz,
   puedeVerConversacion,
   type SesionUsuario,
 } from "@/lib/autorizacion"
-import { casoActivo, interlocutorPorSlug, leerImprevistos } from "@/lib/catalogo"
+import { interlocutorPorSlug, leerImprevistos, type Caso, type Interlocutor } from "@/lib/catalogo"
 import { db, registrarFalloDeDatos } from "@/lib/db"
 import { detalleSeguro } from "@/lib/enmascarar"
 import { ErrorHttp } from "@/lib/errores"
 import { pedirResumen, pedirToken, pedirUrlFirmada, traerConversacion, type FichaConversacion, type MensajeVisible } from "@/lib/elevenlabs"
-import { clavesEnviables } from "@/lib/imprevistos"
+import { clavesDelCaso } from "@/lib/imprevistos"
 import { log } from "@/lib/log"
 import { permitir } from "@/lib/limite"
 import { metaPagina, type MetaPagina } from "@/lib/paginacion"
 import { validarIdConversacion } from "@/lib/validar"
 import { armarVariables, type VariablesConversacion } from "@/lib/variables"
 import { obtenerModulo, obtenerVozHabilitada } from "@/servicios/cohorte"
+import { asegurarEquipoDemo } from "@/servicios/instructor"
 
 type Modo = "texto" | "voz"
 
@@ -55,16 +57,35 @@ function llave(usuarioId: string, agenteSlug: string): string {
 }
 
 function nombreAgente(slug: string): string {
-  return casoActivo().interlocutores.find((item) => item.slug === slug)?.nombre ?? slug
+  const hallado = interlocutorPorSlug(slug)
+  if (!hallado) return slug
+  if (hallado.caso.audiencia === "instructor") return `${hallado.interlocutor.nombre} · ${hallado.caso.nombre}`
+  return hallado.interlocutor.nombre
 }
 
-function exigirEquipo(usuario: SesionUsuario): { equipoId: string; equipoNombre: string } {
-  const codigo = puedeIniciarConversacion(usuario)
-  if (codigo === 401) throw new ErrorHttp(401, "Tienes que entrar para continuar.")
-  if (codigo === 403 || !usuario.equipoId || !usuario.equipoNombre) {
-    throw new ErrorHttp(403, "Tu cuenta no tiene equipo.")
+function exigirCasoActivo(slug: string): { caso: Caso; interlocutor: Interlocutor } {
+  const hallado = interlocutorPorSlug(slug)
+  if (!hallado || !hallado.caso.activo) throw new ErrorHttp(404, "No encontramos ese interlocutor.")
+  return hallado
+}
+
+async function exigirEquipo(
+  usuario: SesionUsuario,
+  caso: Caso,
+): Promise<{ equipoId: string; equipoNombre: string }> {
+  const destino = destinoDeConversacion(usuario, caso.audiencia)
+  if (destino === 401) throw new ErrorHttp(401, "Tienes que entrar para continuar.")
+  if (destino === 403) {
+    throw new ErrorHttp(
+      403,
+      caso.audiencia === "instructor" ? "No puedes conversar con ese interlocutor." : "Tu cuenta no tiene equipo.",
+    )
   }
-  return { equipoId: usuario.equipoId, equipoNombre: usuario.equipoNombre }
+  if (destino.tipo === "demo") {
+    const demo = await asegurarEquipoDemo()
+    return { equipoId: demo.id, equipoNombre: destino.equipoNombre }
+  }
+  return { equipoId: destino.equipoId, equipoNombre: destino.equipoNombre }
 }
 
 async function intentarResumen(equipoId: string, agenteSlug: string): Promise<void> {
@@ -90,8 +111,12 @@ async function intentarResumen(equipoId: string, agenteSlug: string): Promise<vo
   }
 }
 
-async function variablesPara(usuario: SesionUsuario, agenteSlug: string): Promise<VariablesConversacion> {
-  const equipo = exigirEquipo(usuario)
+async function variablesPara(
+  usuario: SesionUsuario,
+  caso: Caso,
+  agenteSlug: string,
+): Promise<{ equipoId: string; variables: VariablesConversacion }> {
+  const equipo = await exigirEquipo(usuario, caso)
   await intentarResumen(equipo.equipoId, agenteSlug)
   const [modulo, activas, resumen] = await Promise.all([
     obtenerModulo(),
@@ -101,31 +126,41 @@ async function variablesPara(usuario: SesionUsuario, agenteSlug: string): Promis
     }),
   ])
   const catalogo = leerImprevistos()
-  return armarVariables({
-    modulo,
-    equipo: equipo.equipoNombre,
-    claves: clavesEnviables(
-      activas.map((fila) => fila.clave),
-      catalogo.orden,
-    ),
-    resumen: resumen?.texto,
-  })
+  return {
+    equipoId: equipo.equipoId,
+    variables: armarVariables({
+      modulo,
+      equipo: equipo.equipoNombre,
+      claves: clavesDelCaso(
+        activas.map((fila) => fila.clave),
+        catalogo.orden,
+        catalogo.porClave,
+        caso.caso,
+      ),
+      resumen: resumen?.texto,
+    }),
+  }
 }
 
 export async function iniciarSesion(
   usuario: SesionUsuario,
   entrada: { agenteSlug: string; modo: Modo },
 ): Promise<{ modo: Modo; signed_url?: string; token?: string; variables: VariablesConversacion; usuario_id: string }> {
-  exigirEquipo(usuario)
+  const { caso, interlocutor } = exigirCasoActivo(entrada.agenteSlug)
+  const codigo = puedeIniciarConversacion(usuario, caso.audiencia)
+  if (codigo === 403) {
+    throw new ErrorHttp(
+      403,
+      caso.audiencia === "instructor" ? "No puedes conversar con ese interlocutor." : "Tu cuenta no tiene equipo.",
+    )
+  }
   if (!permitir(`sesion:${usuario.id}`, 20, 10 * 60 * 1000)) {
     throw new ErrorHttp(429, "Demasiadas conversaciones seguidas. Espera un momento.")
   }
-  const interlocutor = interlocutorPorSlug(entrada.agenteSlug)
-  if (!interlocutor) throw new ErrorHttp(404, "No encontramos ese interlocutor.")
   if (entrada.modo === "voz" && !puedePedirTokenDeVoz(usuario.rol, await obtenerVozHabilitada())) {
     throw new ErrorHttp(403, "La voz no está habilitada.")
   }
-  const variables = await variablesPara(usuario, entrada.agenteSlug)
+  const { variables } = await variablesPara(usuario, caso, entrada.agenteSlug)
   const credencial =
     entrada.modo === "texto"
       ? { signed_url: await pedirUrlFirmada(interlocutor.agent_id) }
@@ -159,10 +194,9 @@ export async function registrarConversacion(
   usuario: SesionUsuario,
   entrada: { conversationId: string; agenteSlug: string; modo: Modo },
 ): Promise<{ id: string }> {
-  const equipo = exigirEquipo(usuario)
+  const { caso, interlocutor } = exigirCasoActivo(entrada.agenteSlug)
+  const equipo = await exigirEquipo(usuario, caso)
   const id = validarIdConversacion(entrada.conversationId)
-  const interlocutor = interlocutorPorSlug(entrada.agenteSlug)
-  if (!interlocutor) throw new ErrorHttp(404, "No encontramos ese interlocutor.")
   const pendiente = pendientes.get(llave(usuario.id, entrada.agenteSlug))
   if (!pendiente || pendiente.vence <= Date.now() || pendiente.modo !== entrada.modo) {
     throw new ErrorHttp(404, "No encontramos esa conversación.")
@@ -262,9 +296,9 @@ export async function leerTranscripcion(usuario: SesionUsuario, conversationId: 
   if (!fila || !puedeVerConversacion(usuario, fila)) {
     throw new ErrorHttp(404, "No encontramos esa conversación.")
   }
-  const interlocutor = interlocutorPorSlug(fila.agenteSlug)
-  if (!interlocutor) throw new ErrorHttp(404, "No encontramos esa conversación.")
-  const ficha = await fichaPropia(id, fila.usuarioId, interlocutor.agent_id, false)
+  const hallado = interlocutorPorSlug(fila.agenteSlug)
+  if (!hallado) throw new ErrorHttp(404, "No encontramos esa conversación.")
+  const ficha = await fichaPropia(id, fila.usuarioId, hallado.interlocutor.agent_id, false)
   return {
     id: fila.id,
     iniciada_at: fila.iniciadaAt.toISOString(),
@@ -284,8 +318,8 @@ export async function cerrarConversacion(usuario: SesionUsuario, conversationId:
   if (!fila || !puedeVerConversacion(usuario, fila)) {
     throw new ErrorHttp(404, "No encontramos esa conversación.")
   }
-  const interlocutor = interlocutorPorSlug(fila.agenteSlug)
-  if (!interlocutor) throw new ErrorHttp(404, "No encontramos esa conversación.")
+  const hallado = interlocutorPorSlug(fila.agenteSlug)
+  if (!hallado) throw new ErrorHttp(404, "No encontramos esa conversación.")
   const posterior = await db().conversacion.findFirst({
     where: {
       equipoId: fila.equipoId,
@@ -295,7 +329,7 @@ export async function cerrarConversacion(usuario: SesionUsuario, conversationId:
     select: { id: true },
   })
   if (posterior) return { guardado: true }
-  await fichaPropia(id, fila.usuarioId, interlocutor.agent_id, false)
+  await fichaPropia(id, fila.usuarioId, hallado.interlocutor.agent_id, false)
   try {
     const texto = await pedirResumen(id)
     if (!texto) return { guardado: false }
