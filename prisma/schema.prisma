@@ -1,0 +1,88 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Cohorte {
+  id     String @id
+  modulo String
+
+  @@map("cohorte")
+}
+
+model Equipo {
+  id             String                   @id @default(uuid()) @db.Uuid
+  slug           String                   @unique
+  nombre         String
+  deletedAt      DateTime?                @map("deleted_at")
+  createdAt      DateTime                 @default(now()) @map("created_at")
+  usuarios       Usuario[]
+  conversaciones Conversacion[]
+  activaciones   ActivacionImprevisto[]
+  resumenes      ResumenConversacion[]
+
+  @@map("equipos")
+}
+
+model Usuario {
+  id             String                  @id @default(uuid()) @db.Uuid
+  email          String                  @unique
+  nombre         String
+  rol            String
+  equipoId       String?                 @map("equipo_id") @db.Uuid
+  deletedAt      DateTime?               @map("deleted_at")
+  createdAt      DateTime                @default(now()) @map("created_at")
+  equipo         Equipo?                 @relation(fields: [equipoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  conversaciones Conversacion[]
+  activaciones   ActivacionImprevisto[]
+
+  @@index([equipoId])
+  @@map("usuarios")
+}
+
+model Conversacion {
+  id                   String   @id
+  equipoId             String   @map("equipo_id") @db.Uuid
+  usuarioId            String   @map("usuario_id") @db.Uuid
+  agenteSlug           String   @map("agente_slug")
+  modulo               String
+  imprevistosActivos   String   @map("imprevistos_activos")
+  resumenPrevioEnviado String   @map("resumen_previo_enviado")
+  modo                 String
+  iniciadaAt           DateTime @default(now()) @map("iniciada_at")
+  equipo               Equipo   @relation(fields: [equipoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  usuario              Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@index([equipoId, iniciadaAt])
+  @@map("conversaciones")
+}
+
+model ActivacionImprevisto {
+  id         String   @id @default(uuid()) @db.Uuid
+  equipoId   String   @map("equipo_id") @db.Uuid
+  clave      String
+  activadaAt DateTime @default(now()) @map("activada_at")
+  usuarioId  String   @map("usuario_id") @db.Uuid
+  equipo     Equipo   @relation(fields: [equipoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  usuario    Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([equipoId, clave])
+  @@map("activaciones_imprevisto")
+}
+
+model ResumenConversacion {
+  id             String   @id @default(uuid()) @db.Uuid
+  equipoId       String   @map("equipo_id") @db.Uuid
+  agenteSlug     String   @map("agente_slug")
+  texto          String
+  conversationId String   @map("conversation_id")
+  actualizadoAt  DateTime @updatedAt @map("actualizado_at")
+  equipo         Equipo   @relation(fields: [equipoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([equipoId, agenteSlug])
+  @@map("resumenes_conversacion")
+}

@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Faro AI">
+  <title>Faro AI</title>
+  <rect width="64" height="64" rx="12" fill="#0B1F33"/>
+  <path d="M32 8 L40 26 H24 Z" fill="#E6A23C"/>
+  <rect x="28" y="26" width="8" height="14" fill="#F4EFE6"/>
+  <path d="M18 40 H46 L50 54 H14 Z" fill="#E6A23C"/>
+  <rect x="30" y="54" width="4" height="6" fill="#F4EFE6"/>
+</svg>

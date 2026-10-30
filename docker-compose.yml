@@ -1,0 +1,14 @@
+# Postgres local. Licencia PostgreSQL, permisiva. No es el despliegue.
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: faro
+      POSTGRES_PASSWORD: faro
+      POSTGRES_DB: faro
+    ports:
+      - "5433:5432"
+    volumes:
+      - faro-pg:/var/lib/postgresql/data
+volumes:
+  faro-pg:

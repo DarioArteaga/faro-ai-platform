@@ -1,0 +1,27 @@
+# Texto público de las tarjetas e identificadores de los agentes ya publicados.
+# Un caso activo. Seguros Pampa se suma aquí, sin cambiar el código.
+casos:
+  - slug: energia-del-litoral
+    nombre: Energía del Litoral
+    activo: true
+    interlocutores:
+      - slug: cliente_negocio
+        nombre: Cliente Negocio
+        quien: Laura Benítez (sponsor), Marcos Díaz (call center) y Claudia Ferreyra (finanzas)
+        importa: Que el problema que la trajo se resuelva
+        agent_id: agent_1601m5z3e58tfmav6hacn6d60tc7
+      - slug: cliente_it
+        nombre: Cliente IT
+        quien: Rubén Sosa, Jefe de Sistemas
+        importa: Seguridad, accesos mínimos y no quedar de guardia por un sistema ajeno
+        agent_id: agent_7801m5z7vge6emwtjza7vqh8r5qe
+      - slug: account_executive
+        nombre: Account Executive de Faro AI
+        quien: Sofía Medrano, dueña comercial de la cuenta
+        importa: La renovación
+        agent_id: agent_1301m5z8zb6afmq9wg0n0qrcj79g
+      - slug: producto_gtm
+        nombre: Producto/GTM de Faro AI
+        quien: Andrés Villalba, responsable de producto y go-to-market
+        importa: Qué parte de lo construido sirve para otros clientes
+        agent_id: agent_3701m5zcsvefeb5s6s66s6ffd6er

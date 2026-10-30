@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Faro AI</title>
+  <meta name="description" content="Páginas de respaldo de Faro AI. Cada equipo tiene un índice y cada interlocutor, su página.">
+  <meta property="og:title" content="Faro AI">
+  <meta property="og:description" content="Páginas de respaldo de Faro AI. Cada equipo tiene un índice y cada interlocutor, su página.">
+  <meta property="og:type" content="website">
+  <meta property="og:locale" content="es_MX">
+  <meta property="og:image" content="http://127.0.0.1:8080/logo.svg">
+  <link rel="icon" href="/favicon.ico">
+  <!-- ponytail: canonical cuando exista el dominio público. Hoy el sitio solo se sirve en local. -->
+  <!-- ponytail: ajustar connect-src cuando se pruebe el widget contra ElevenLabs -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://unpkg.com; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://api.elevenlabs.io wss://api.elevenlabs.io https://*.elevenlabs.io wss://*.elevenlabs.io https://*.livekit.cloud wss://*.livekit.cloud; media-src 'self' blob:; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; frame-ancestors 'none'">
+  <style>
+:root { color-scheme: light; }
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: #f4efe6;
+  color: #14202b;
+  font-family: "Segoe UI", "Helvetica Neue", sans-serif;
+  line-height: 1.5;
+}
+a { color: inherit; }
+a:hover { text-decoration-thickness: 2px; }
+:focus-visible { outline: 3px solid #e6a23c; outline-offset: 2px; }
+.marca {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: #0b1f33;
+  color: #f4efe6;
+  padding: 1rem 1.5rem;
+}
+.marca p { margin: 0; font-weight: 700; }
+.contenido { max-width: 64rem; margin: 0 auto; padding: 1.5rem; }
+h1 { font-size: 2rem; line-height: 1.2; margin: 0 0 0.5rem; }
+.tarjeta {
+  background: #fffdf8;
+  border: 1px solid #0b1f33;
+  border-top: 4px solid #e6a23c;
+  padding: 1rem 1.25rem;
+  margin: 1rem 0;
+}
+h2 { font-size: 1.25rem; margin: 0 0 0.35rem; }
+.meta { margin: 0.25rem 0; }
+.pie { margin-top: 2rem; font-size: 0.9rem; }
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+</style>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"Organization","name":"Faro AI","description":"Empresa ficticia. Plataforma para conversar con los interlocutores del curso."}</script>
+</head>
+<body>
+  <a class="sr-only" href="#contenido">Saltar al contenido</a>
+  <header class="marca">
+    <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 64 64" aria-hidden="true">
+  <rect width="64" height="64" rx="12" fill="#0B1F33"/>
+  <path d="M32 8 L40 26 H24 Z" fill="#E6A23C"/>
+  <rect x="28" y="26" width="8" height="14" fill="#F4EFE6"/>
+  <path d="M18 40 H46 L50 54 H14 Z" fill="#E6A23C"/>
+  <rect x="30" y="54" width="4" height="6" fill="#F4EFE6"/>
+</svg>
+    <p>Faro AI</p>
+  </header>
+  <main id="contenido" class="contenido">
+    <h1>Faro AI</h1>
+    <p>Respaldo estático. Cada equipo tiene un índice y cada interlocutor, su página.</p>
+    <p>Todavía no hay páginas de equipo. La lista vive en la configuración y el generador publica una página por cada fila.</p>
+    <p class="pie">Faro AI es una empresa ficticia.</p>
+  </main>
+</body>
+</html>

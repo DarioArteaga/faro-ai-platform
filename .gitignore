@@ -1,0 +1,21 @@
+# Insumos de la sesión. No se versionan. La copia de trabajo de los imprevistos está en config/.
+/faro-ai-platform-m1.md
+/contexto-agentes-para-plataforma.md
+/00-LEEME.md
+/01-prompt-inicial.md
+/imprevistos.yaml
+# Reglas del proyecto. Quedan solo en esta máquina.
+AGENTS.md
+
+/node_modules/
+/.next/
+/out/
+/coverage/
+*.log
+*.tsbuildinfo
+
+.env
+.env.*
+!.env.example
+
+/plan-b/vista-previa/

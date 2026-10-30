@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /login
+Allow: /llms.txt
+Allow: /logo.svg
+Disallow: /api/
+Disallow: /interlocutores
+Disallow: /conversacion/
+Disallow: /historial
+Disallow: /instructor

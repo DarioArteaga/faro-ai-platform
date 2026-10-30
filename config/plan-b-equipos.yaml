@@ -1,0 +1,3 @@
+# Páginas estáticas del plan B. Cada entrada genera plan-b/equipos/<slug>.html
+# El nombre visible es el valor de la variable equipo. No inventar equipos.
+equipos: []

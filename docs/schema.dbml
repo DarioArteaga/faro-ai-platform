@@ -1,0 +1,72 @@
+// Equipos, estudiantes, conversaciones, activaciones y resumenes de Faro AI.
+
+Table cohorte {
+  id varchar [pk, note: 'Fila única, valor principal']
+  modulo varchar [not null, note: 'M1, M2, M3 o M4']
+}
+
+Table equipos {
+  id uuid [pk]
+  slug varchar [unique, not null]
+  nombre varchar [not null]
+  deleted_at timestamp
+  created_at timestamp [not null, default: `now()`]
+}
+
+Table usuarios {
+  id uuid [pk]
+  email varchar [unique, not null]
+  nombre varchar [not null]
+  rol varchar [not null, note: 'estudiante o instructor']
+  equipo_id uuid
+  deleted_at timestamp
+  created_at timestamp [not null, default: `now()`]
+}
+
+Table conversaciones {
+  id varchar [pk, note: 'Id que devuelve ElevenLabs']
+  equipo_id uuid [not null]
+  usuario_id uuid [not null]
+  agente_slug varchar [not null]
+  modulo varchar [not null]
+  imprevistos_activos varchar [not null]
+  resumen_previo_enviado varchar [not null]
+  modo varchar [not null, note: 'texto o voz']
+  iniciada_at timestamp [not null, default: `now()`]
+
+  indexes {
+    (equipo_id, iniciada_at) [name: 'conversaciones_equipo_fecha']
+  }
+}
+
+Table activaciones_imprevisto {
+  id uuid [pk]
+  equipo_id uuid [not null]
+  clave varchar [not null]
+  activada_at timestamp [not null, default: `now()`]
+  usuario_id uuid [not null]
+
+  indexes {
+    (equipo_id, clave) [unique, name: 'activacion_equipo_clave']
+  }
+}
+
+Table resumenes_conversacion {
+  id uuid [pk]
+  equipo_id uuid [not null]
+  agente_slug varchar [not null]
+  texto varchar [not null]
+  conversation_id varchar [not null]
+  actualizado_at timestamp [not null]
+
+  indexes {
+    (equipo_id, agente_slug) [unique, name: 'resumen_equipo_agente']
+  }
+}
+
+Ref: usuarios.equipo_id > equipos.id [delete: restrict, update: restrict]
+Ref: conversaciones.equipo_id > equipos.id [delete: restrict, update: restrict]
+Ref: conversaciones.usuario_id > usuarios.id [delete: restrict, update: restrict]
+Ref: activaciones_imprevisto.equipo_id > equipos.id [delete: restrict, update: restrict]
+Ref: activaciones_imprevisto.usuario_id > usuarios.id [delete: restrict, update: restrict]
+Ref: resumenes_conversacion.equipo_id > equipos.id [delete: restrict, update: restrict]

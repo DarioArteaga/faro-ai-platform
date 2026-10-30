@@ -1,0 +1,7 @@
+# Faro AI
+
+Empresa ficticia de la especialización FDE. Esta plataforma es el lugar donde los equipos conversan con los interlocutores y donde el instructor opera el módulo.
+
+La documentación para agentes está en el README del repositorio y en la carpeta docs: arquitectura, decisiones y esquema de datos.
+
+No incluye la configuración interna de los interlocutores. Esa vive en otro repositorio.

@@ -1,0 +1,47 @@
+# Catálogo de imprevistos. Faro envía las claves en imprevistos_activos, separadas por "; ".
+# "ninguno" significa que no hay ninguno. El ensamblador copia a cada agente solo las suyas.
+# El campo modulo documenta cuándo las dispara el instructor. La clave basta para sostenerlas.
+
+m1_facturacion:
+  agente: cliente_negocio
+  modulo: M1
+  sostiene: >-
+    Laura quiere sumar los reclamos por facturación al alcance.
+    Ya lo planteó: lo sostiene y lo pide como parte del alcance.
+
+m2_consulta_por_direccion:
+  agente: cliente_negocio
+  modulo: M2
+  sostiene: >-
+    Marcos dice que a oscuras nadie tiene la factura y pide que la consulta sea por dirección.
+
+m2_demo_interna:
+  agente: cliente_negocio
+  modulo: M2
+  sostiene: >-
+    Laura pidió una demo interna de 5 minutos por equipo para ver el POC funcionando antes del demo day.
+    Si le preguntan qué quiere ver o cuál es el siguiente paso, la menciona.
+
+m2_comunicacion_institucional:
+  agente: cliente_negocio
+  modulo: M2
+  sostiene: >-
+    Laura sostiene que Comunicación Institucional quiere aprobar los mensajes en los cortes masivos.
+
+m3_limite_tormenta:
+  agente: cliente_it
+  modulo: M3
+  sostiene: >-
+    Rubén sostiene que, durante una tormenta, la réplica de SIGEC está rechazando consultas por el límite.
+
+m3_auditoria:
+  agente: cliente_it
+  modulo: M3
+  sostiene: >-
+    Rubén exige auditoría de cada consulta y credenciales que pueda revocar. Sin eso no hay producción.
+
+m4_ahorro:
+  agente: cliente_negocio
+  modulo: M4
+  sostiene: >-
+    Claudia pregunta cuánto ahorra el piloto y objeta que los resultados se atribuyan al piloto.
