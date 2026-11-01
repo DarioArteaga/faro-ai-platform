@@ -6,6 +6,7 @@ import { useRef, useState } from "react"
 import { z } from "zod"
 
 import { anexarLinea, pausaSiguiente } from "@/lib/conversacion-viva"
+import { enmascararCuerpoTool } from "@/lib/enmascarar"
 import { logCliente } from "@/lib/log-cliente"
 
 const respuestaSesion = z.object({
@@ -37,12 +38,14 @@ function Panel({
   nombre,
   modo,
   vozHabilitada,
+  equipoSlug,
   onModo,
 }: {
   slug: string
   nombre: string
   modo: Modo
   vozHabilitada: boolean
+  equipoSlug?: string
   onModo: (modo: Modo) => void
 }): React.ReactElement {
   const idRef = useRef("")
@@ -57,7 +60,12 @@ function Panel({
       void fetch("/api/v1/conversaciones", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ conversation_id: conversationId, agente_slug: slug, modo }),
+        body: JSON.stringify({
+          conversation_id: conversationId,
+          agente_slug: slug,
+          modo,
+          ...(equipoSlug ? { equipo_slug: equipoSlug } : {}),
+        }),
       }).then((respuesta) => {
         if (!respuesta.ok) setError("La conversación empezó, pero no se pudo guardar en el historial.")
       })
@@ -95,6 +103,17 @@ function Panel({
         }),
       )
     },
+    onAgentToolRequest: (pedido) => {
+      setLineas((previas) => anexarLinea(previas, { rol: "Tool", texto: `${pedido.tool_name}: el agente la llamó.` }))
+    },
+    onAgentToolResponse: (respuesta) => {
+      const cuerpo = "full_tool_result" in respuesta && typeof respuesta.full_tool_result === "string" ? respuesta.full_tool_result : ""
+      const visible = cuerpo ? enmascararCuerpoTool(cuerpo) : ""
+      const texto = visible
+        ? `${respuesta.tool_name}: ${respuesta.is_error ? "error" : "respondió"} ${visible}`
+        : `${respuesta.tool_name}: ${respuesta.is_error ? "error" : "respondió"}.`
+      setLineas((previas) => anexarLinea(previas, { rol: "Tool", texto }))
+    },
     onError: (mensaje) => {
       logCliente("error", "fallo de conversacion", { detalle: mensaje.slice(0, 180) })
       setError("No se pudo mantener la conversación.")
@@ -108,7 +127,11 @@ function Panel({
       const respuesta = await fetch("/api/v1/conversaciones/sesion", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ agente_slug: slug, modo }),
+        body: JSON.stringify({
+          agente_slug: slug,
+          modo,
+          ...(equipoSlug ? { equipo_slug: equipoSlug } : {}),
+        }),
       })
       if (!respuesta.ok) {
         setError(await detalleDe(respuesta))
@@ -216,16 +239,25 @@ export function ConversacionCliente({
   slug,
   nombre,
   vozHabilitada,
+  equipoSlug,
 }: {
   slug: string
   nombre: string
   vozHabilitada: boolean
+  equipoSlug?: string
 }): React.ReactElement {
   const [modo, setModo] = useState<Modo>("texto")
   const modoEfectivo: Modo = vozHabilitada ? modo : "texto"
   return (
     <ConversationProvider textOnly={modoEfectivo === "texto"}>
-      <Panel slug={slug} nombre={nombre} modo={modoEfectivo} vozHabilitada={vozHabilitada} onModo={setModo} />
+      <Panel
+        slug={slug}
+        nombre={nombre}
+        modo={modoEfectivo}
+        vozHabilitada={vozHabilitada}
+        equipoSlug={equipoSlug}
+        onModo={setModo}
+      />
     </ConversationProvider>
   )
 }

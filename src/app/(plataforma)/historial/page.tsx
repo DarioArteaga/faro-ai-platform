@@ -43,7 +43,10 @@ export default async function Historial({
             {lista.items.map((item) => (
               <tr key={item.id}>
                 <td>{formatoFecha(new Date(item.iniciada_at))}</td>
-                <td>{item.agente_nombre}</td>
+                <td>
+                  {item.agente_nombre}
+                  {item.version_numero ? `, versión ${item.version_numero}` : ""}
+                </td>
                 <td>{item.conductor}</td>
                 <td>{item.modo}</td>
                 <td>

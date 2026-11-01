@@ -10,6 +10,7 @@ const esquema = z
     conversation_id: z.string(),
     agente_slug: z.string().min(1).max(80),
     modo: z.enum(["texto", "voz"]),
+    equipo_slug: z.string().min(1).max(80).optional(),
   })
   .strict()
 
@@ -29,6 +30,7 @@ export async function POST(request: Request): Promise<Response> {
       conversationId: datos.conversation_id,
       agenteSlug: datos.agente_slug,
       modo: datos.modo,
+      equipoSlug: datos.equipo_slug ?? null,
     })
   })
 }

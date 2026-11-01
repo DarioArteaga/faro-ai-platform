@@ -25,6 +25,8 @@ model Equipo {
   conversaciones Conversacion[]
   activaciones   ActivacionImprevisto[]
   resumenes      ResumenConversacion[]
+  agente         AgenteEquipo?
+  tope           TopeEquipo?
 
   @@map("equipos")
 }
@@ -40,6 +42,8 @@ model Usuario {
   equipo         Equipo?                 @relation(fields: [equipoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   conversaciones Conversacion[]
   activaciones   ActivacionImprevisto[]
+  versiones      VersionAgente[]
+  simulaciones   Simulacion[]
 
   @@index([equipoId])
   @@map("usuarios")
@@ -55,10 +59,17 @@ model Conversacion {
   resumenPrevioEnviado String   @map("resumen_previo_enviado")
   modo                 String
   iniciadaAt           DateTime @default(now()) @map("iniciada_at")
+  equipoEnviado        String?  @map("equipo_enviado")
+  controlVariables     String   @default("anterior") @map("control_variables")
+  clavesAlteradas      String?  @map("claves_alteradas") @db.VarChar(200)
+  versionAgenteId      String?  @map("version_agente_id") @db.Uuid
+  duracionSegundos     Int?     @map("duracion_segundos")
   equipo               Equipo   @relation(fields: [equipoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   usuario              Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  versionAgente        VersionAgente? @relation(fields: [versionAgenteId], references: [id], onDelete: Restrict, onUpdate: Restrict)
 
   @@index([equipoId, iniciadaAt])
+  @@index([versionAgenteId], map: "conversaciones_version_agente")
   @@map("conversaciones")
 }
 
@@ -86,4 +97,79 @@ model ResumenConversacion {
 
   @@unique([equipoId, agenteSlug])
   @@map("resumenes_conversacion")
+}
+
+model AgenteEquipo {
+  id              String    @id @default(uuid()) @db.Uuid
+  equipoId        String    @unique @map("equipo_id") @db.Uuid
+  agentId         String    @unique @map("agent_id")
+  nombre          String
+  prompt          String
+  primerMensaje   String    @map("primer_mensaje")
+  vozSlug         String    @map("voz_slug")
+  modeloSlug      String    @map("modelo_slug")
+  toolId          String?   @map("tool_id")
+  secretId        String?   @map("secret_id")
+  toolSecretoCifrado String? @map("tool_secreto_cifrado")
+  toolUrl         String?   @map("tool_url")
+  toolMetodo      String?   @map("tool_metodo")
+  toolDescripcion String?   @map("tool_descripcion")
+  toolParametros  Json?     @map("tool_parametros")
+  archivadoAt     DateTime? @map("archivado_at")
+  deletedAt       DateTime? @map("deleted_at")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+  equipo          Equipo    @relation(fields: [equipoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  versiones       VersionAgente[]
+  simulaciones    Simulacion[]
+
+  @@map("agentes_equipo")
+}
+
+model VersionAgente {
+  id           String         @id @default(uuid()) @db.Uuid
+  agenteId     String         @map("agente_id") @db.Uuid
+  numero       Int
+  usuarioId    String         @map("usuario_id") @db.Uuid
+  guardadoAt   DateTime       @default(now()) @map("guardado_at")
+  origenNumero Int?           @map("origen_numero")
+  snapshot     Json
+  agente       AgenteEquipo   @relation(fields: [agenteId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  usuario      Usuario        @relation(fields: [usuarioId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  conversaciones Conversacion[]
+  simulaciones Simulacion[]
+
+  @@unique([agenteId, numero])
+  @@map("versiones_agente")
+}
+
+model TopeEquipo {
+  equipoId            String  @id @map("equipo_id") @db.Uuid
+  conversacionesTexto Int     @map("conversaciones_texto")
+  simulaciones        Int
+  minutosVoz          Int     @map("minutos_voz")
+  vozHabilitada       Boolean @default(false) @map("voz_habilitada")
+  equipo              Equipo  @relation(fields: [equipoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@map("topes_equipo")
+}
+
+model Simulacion {
+  id            String       @id @default(uuid()) @db.Uuid
+  agenteId      String       @map("agente_id") @db.Uuid
+  versionId     String       @map("version_id") @db.Uuid
+  usuarioId     String       @map("usuario_id") @db.Uuid
+  escenario     String
+  criterio      String
+  resultado     String
+  razon         String
+  transcripcion String
+  creditos      Int?
+  creadaAt      DateTime     @default(now()) @map("creada_at")
+  agente        AgenteEquipo @relation(fields: [agenteId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  version       VersionAgente @relation(fields: [versionId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  usuario       Usuario      @relation(fields: [usuarioId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@index([agenteId, creadaAt], map: "simulaciones_agente_fecha")
+  @@map("simulaciones")
 }

@@ -15,6 +15,7 @@ import {
   renombrarEquipo,
   type Aviso,
 } from "@/servicios/instructor"
+import { archivarAgenteDeEquipo, guardarTopesDeEquipo } from "@/servicios/agentes"
 import { exigirInstructor } from "@/servicios/sesion"
 
 function texto(formData: FormData, campo: string): string {
@@ -89,6 +90,30 @@ export async function editarEstudianteAccion(formData: FormData): Promise<void> 
       }),
     "editar-estudiante",
   )
+}
+
+function entero(formData: FormData, campo: string): number {
+  return Number(texto(formData, campo))
+}
+
+export async function guardarTopesAccion(formData: FormData): Promise<void> {
+  await correr(async () => {
+    await guardarTopesDeEquipo(texto(formData, "equipo_slug"), {
+      conversacionesTexto: entero(formData, "conversaciones_texto"),
+      simulaciones: entero(formData, "simulaciones"),
+      minutosVoz: entero(formData, "minutos_voz"),
+      vozHabilitada: formData.get("voz_habilitada") === "si",
+    })
+    return "guardado"
+  }, "topes-agente")
+}
+
+export async function archivarAgenteAccion(formData: FormData): Promise<void> {
+  await correr(async () => {
+    if (formData.get("confirmo") !== "si") throw new ErrorHttp(400, "Falta la confirmación.")
+    await archivarAgenteDeEquipo(texto(formData, "equipo_slug"))
+    return "baja"
+  }, "archivar-agente")
 }
 
 export async function bajaEstudianteAccion(formData: FormData): Promise<void> {

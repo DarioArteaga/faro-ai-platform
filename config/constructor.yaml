@@ -1,0 +1,46 @@
+# Voces, modelos y topes del constructor de M2.
+# ponytail: subir herramientas_max a 2 si se confirma esa propuesta
+
+caso_slug: energia-del-litoral
+prefijo_nombre: "M2 · "
+tts_model_id: eleven_v4_turbo
+encabezado_secreto: x-faro-tool-secret
+idioma: es
+prompt_max: 8000
+nombre_max: 80
+primer_mensaje_max: 500
+herramientas_max: 1
+parametros_max: 8
+simulacion_turnos_max: 8
+modelo_simulacion: gpt-5.4-mini
+topes:
+  conversaciones_texto: 200
+  simulaciones: 60
+  minutos_voz: 15
+voces:
+  - slug: juan-carlos
+    nombre: Juan Carlos
+    detalle: Masculina
+    voice_id: YExhVa4bZONzeingloMX
+  - slug: cristina-campos
+    nombre: Cristina Campos
+    detalle: Femenina
+    voice_id: nTkjq09AuYgsNR8E4sDe
+  - slug: martina
+    nombre: Martina
+    detalle: Femenina
+    voice_id: jw1XYij1FCiI9FENSxIf
+  - slug: omar
+    nombre: Omar
+    detalle: Masculina
+    voice_id: 1IVWxPHWEi1qouA3cAop
+modelos:
+  - slug: gemini-3-5-flash
+    nombre: Gemini 3.5 Flash
+    llm: gemini-3.5-flash
+  - slug: gpt-5-4-mini
+    nombre: GPT-5.4 Mini
+    llm: gpt-5.4-mini
+  - slug: claude-sonnet-4-6
+    nombre: Claude Sonnet 4.6
+    llm: claude-sonnet-4-6

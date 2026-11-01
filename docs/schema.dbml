@@ -1,4 +1,4 @@
-// Equipos, estudiantes, conversaciones, activaciones y resumenes de Faro AI.
+// Equipos, estudiantes, conversaciones, agentes, activaciones y resumenes de Faro AI.
 
 Table cohorte {
   id varchar [pk, note: 'Fila única, valor principal']
@@ -34,6 +34,11 @@ Table conversaciones {
   resumen_previo_enviado varchar [not null]
   modo varchar [not null, note: 'texto o voz']
   iniciada_at timestamp [not null, default: `now()`]
+  equipo_enviado varchar [note: 'Nombre emitido en la variable equipo. Nulo en filas anteriores al control']
+  control_variables varchar [not null, default: 'anterior', note: 'anterior, pendiente, coincide o alterada']
+  claves_alteradas varchar(200) [note: 'Claves que no coincidieron. Nulo si no hay alteración']
+  version_agente_id uuid [note: 'Versión del agente del equipo. Nulo en interlocutores']
+  duracion_segundos int [note: 'Duración que reporta ElevenLabs. Nulo si no vino']
 
   indexes {
     (equipo_id, iniciada_at) [name: 'conversaciones_equipo_fecha']
@@ -65,7 +70,77 @@ Table resumenes_conversacion {
   }
 }
 
+Table agentes_equipo {
+  id uuid [pk]
+  equipo_id uuid [unique, not null]
+  agent_id varchar [unique, not null, note: 'Id en ElevenLabs. Nunca uno de los ocho interlocutores']
+  nombre varchar [not null]
+  prompt varchar [not null]
+  primer_mensaje varchar [not null]
+  voz_slug varchar [not null]
+  modelo_slug varchar [not null]
+  tool_id varchar
+  secret_id varchar [note: 'Id del secreto en ElevenLabs. El valor no se guarda']
+  tool_secreto_cifrado varchar [note: 'AES-256-GCM. Solo el servidor lo descifra, y solo para Probar la tool']
+  tool_url varchar
+  tool_metodo varchar
+  tool_descripcion varchar
+  tool_parametros jsonb
+  archivado_at timestamp
+  deleted_at timestamp
+  created_at timestamp [not null, default: `now()`]
+  updated_at timestamp [not null]
+}
+
+Table versiones_agente {
+  id uuid [pk]
+  agente_id uuid [not null]
+  numero int [not null]
+  usuario_id uuid [not null]
+  guardado_at timestamp [not null, default: `now()`]
+  origen_numero int [note: 'Versión de la que se copió. Nulo si es un guardado nuevo']
+  snapshot jsonb [not null, note: 'Configuración sin el valor del secreto']
+
+  indexes {
+    (agente_id, numero) [unique, name: 'version_agente_numero']
+  }
+}
+
+Table topes_equipo {
+  equipo_id uuid [pk]
+  conversaciones_texto int [not null]
+  simulaciones int [not null]
+  minutos_voz int [not null]
+  voz_habilitada boolean [not null, default: false, note: 'Voz de este agente. Independiente de la cohorte']
+}
+
+Table simulaciones {
+  id uuid [pk]
+  agente_id uuid [not null]
+  version_id uuid [not null]
+  usuario_id uuid [not null]
+  escenario varchar [not null]
+  criterio varchar [not null]
+  resultado varchar [not null, note: 'paso, no_paso o error']
+  razon varchar [not null]
+  transcripcion varchar [not null]
+  creditos int
+  creada_at timestamp [not null, default: `now()`]
+
+  indexes {
+    (agente_id, creada_at) [name: 'simulaciones_agente_fecha']
+  }
+}
+
 Ref: usuarios.equipo_id > equipos.id [delete: restrict, update: restrict]
+Ref: conversaciones.version_agente_id > versiones_agente.id [delete: restrict, update: restrict]
+Ref: agentes_equipo.equipo_id > equipos.id [delete: restrict, update: restrict]
+Ref: versiones_agente.agente_id > agentes_equipo.id [delete: restrict, update: restrict]
+Ref: versiones_agente.usuario_id > usuarios.id [delete: restrict, update: restrict]
+Ref: topes_equipo.equipo_id > equipos.id [delete: restrict, update: restrict]
+Ref: simulaciones.agente_id > agentes_equipo.id [delete: restrict, update: restrict]
+Ref: simulaciones.version_id > versiones_agente.id [delete: restrict, update: restrict]
+Ref: simulaciones.usuario_id > usuarios.id [delete: restrict, update: restrict]
 Ref: conversaciones.equipo_id > equipos.id [delete: restrict, update: restrict]
 Ref: conversaciones.usuario_id > usuarios.id [delete: restrict, update: restrict]
 Ref: activaciones_imprevisto.equipo_id > equipos.id [delete: restrict, update: restrict]

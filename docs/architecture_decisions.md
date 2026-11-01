@@ -1,6 +1,6 @@
 # Decisiones de arquitectura
 
-Registro del porqué. Prevalece `AGENTS.md`. Lo marcado aquí es lo que quedó aprobado para el alcance M1.
+Registro del porqué. Prevalece `AGENTS.md`. Hasta el ADR-009 es el alcance M1. El ADR-010 cierra, antes de M2, el riesgo de que el navegador altere las variables de la conversación.
 
 ## ADR-001 · Una sola aplicación Next.js
 
@@ -54,6 +54,8 @@ Al empezar se guarda el id de ElevenLabs con el equipo, el estudiante, el agente
 
 El resumen sale de `transcript_summary` en `GET /v1/convai/conversations/{id}/summary`, cuando la conversación ya cerró. ElevenLabs lo arma después de cortar, así que el cliente lo pide al cortar y, si todavía no está, otra vez a los 5, 12 y 25 segundos. Se detiene en cuanto queda guardado. Un cierre atrasado no reemplaza el resumen si ese equipo ya empezó una conversación posterior con el mismo agente. Si al cabo de esa espera sigue vacío o el pedido falla, la fila no se escribe. Al empezar otra con ese agente, si la fila sigue vacía, se intenta leer el resumen otra vez. Si tampoco está, `resumen_previo` sale como `ninguno`. No se agrega un generador propio.
 
+La evaluación prometida antes de M2 quedó cerrada en el ADR-010: el webhook no cubre estas sesiones, y el control pasa a ser la comparación de la ficha.
+
 ## ADR-006 · Plan B local y despliegue diferido
 
 El plan B es HTML estático generado desde `config/plan-b-equipos.yaml`. Hay un índice, una página por equipo con cuatro enlaces y una página por interlocutor con un solo widget. Cada widget lleva `modulo` `M1`, el nombre del equipo, `imprevistos_activos` `ninguno` y `resumen_previo` `ninguno`. La lista de equipos entra vacía a propósito: no se inventan nombres. El generador no publica páginas de equipo hasta que esa lista tenga filas.
@@ -95,3 +97,48 @@ El instructor puede abrir esas conversaciones aunque su cuenta no tenga equipo. 
 `config/imprevistos.yaml` es la copia del kit, con el campo `caso`. El panel separa los imprevistos por caso. A la conversación solo se envían las claves activas de ese caso. Los marcadores `[[cifra:...]]` se muestran tal cual: las cifras viven en el kit y esta aplicación no las resuelve.
 
 El kickoff de M1 es el martes 17 de noviembre de 2026. La clase 1 es el jueves 19 de noviembre de 2026.
+
+## ADR-010 · Variables de conversación comprobadas al leer la ficha
+
+El 31 de octubre de 2026 se revisó la documentación vigente de ElevenLabs, sin abrir una conversación. El webhook de inicio sigue sin correr en el widget ni en el SDK. No cubre la URL firmada ni el token de esta aplicación. Esas dos credenciales tampoco aceptan las variables ni los overrides: solo identifican al agente y, si se piden, la rama, la versión o el entorno de secretos del workspace. Activar el webhook en el kit no cierra el hueco. Se descarta ese webhook, embeber las variables en la credencial, un modelo propio y una rama de agente por módulo. El plan B no cambia.
+
+ElevenLabs sí rechaza un override de prompt, modelo o voz cuando ese permiso está apagado en el agente. Esos permisos nacen apagados. Esta aplicación no los enciende y no los manda. El constructor de agentes de M2, cuando se construya, escribe la voz y el modelo en el agente desde el servidor y deja apagados `prompt`, `llm` y `voice_id`. `text_only` puede quedar encendido solo porque el SDK lo usa para el modo: en texto es verdadero y en voz es falso o ausente. Un `text_only` ausente no se marca. Uno que contradice el modo, sí.
+
+Al registrar la conversación, y otra vez al cerrar si la primera lectura todavía no trae el mapa, se compara lo emitido con `conversation_initiation_client_data`. Hacen falta las cuatro cadenas, iguales. Una clave de más, distinta de las `system__`, es alteración. Si el mapa no vino, el control queda `pendiente` y no se da por coincidente. Un override de voz, modelo, prompt, primer mensaje, idioma o cuerpo extra del modelo también es alteración. No se guarda el texto recibido ni se escribe en el log. La fila anterior a este control queda en `anterior` y el panel no la marca.
+
+El panel del instructor muestra «Alterada», «Sin comprobar» o «En orden». El historial del estudiante no muestra el control. Si alguien usa la credencial y bloquea el registro, no hay fila: ese límite se acepta. No se reconcilia el listado de ElevenLabs.
+
+El mismo día se leyeron los ocho agentes de `config/casos.yaml`, sin imprimir prompts ni la clave y sin abrir conversación. En los ocho, `prompt`, `llm` y `voice_id` están en falso, igual que el webhook de inicio. `text_only` está en verdadero: el SDK lo usa para el modo y se deja. No se modifica el kit desde este repositorio. Si `prompt`, `llm` o `voice_id` aparecieran encendidos, el cambio sería del kit.
+
+## ADR-011 · Voces y modelos del constructor fuera del código
+
+Las cuatro voces y los tres modelos viven en `config/constructor.yaml`. El 31 de octubre de 2026 el usuario reemplazó los identificadores de ejemplo por las voces del workspace: Juan Carlos, Cristina Campos, Martina y Omar. El cliente solo recibe slug y nombre. El servidor resuelve `llm` y `voice_id`. Un `voice_id` que contiene `REEMPLAZAR` se rechaza en español y no llama a ElevenLabs. Ahí también viven el tope de 8.000 caracteres del prompt, el prefijo `M2 · `, el modelo de voz `eleven_v4_turbo`, el encabezado `x-faro-tool-secret`, los topes 200, 60 y 15, y el máximo de una tool. Esos números son la propuesta de la spec del 31 de octubre de 2026, a la espera de Daniel. Se cambian en el archivo, no en el código.
+
+El 31 de octubre de 2026, `GET /v1/convai/llm/list` confirmó los tres modelos en este workspace, sin deprecación: `gemini-3.5-flash`, `gpt-5.4-mini` y `claude-sonnet-4-6`. El calculador `POST /v1/convai/llm-usage/calculate`, con un prompt de 2.000 caracteres, cero páginas y sin RAG, respondió por minuto y por mensaje: Gemini 0,0206 y 0,0039; GPT-5.4 Mini 0,0094 y 0,0018; Claude Sonnet 4.6 0,0402 y 0,0076. El esquema no declara la moneda. La página de modelos habla de dólares. No son créditos y no se muestran en la pantalla. El mismo día se volvió a leer `GET /v1/convai/llm/list`. Los tres identificadores siguen en este workspace y sin deprecación, y son los que quedaron en la configuración: `gemini-3.5-flash`, `gpt-5.4-mini` y `claude-sonnet-4-6`. La pasada para medir créditos no creó el agente: el formulario llegó a Google y esa ventana no tenía sesión. El costo real sigue sin anotar.
+
+## ADR-012 · Un agente por equipo y versiones propias
+
+Hay una fila por equipo. Cada guardado hace `PATCH` del mismo `agent_id` y agrega una versión inmutable en Postgres. Volver a una anterior copia esa configuración al agente, vuelve a hacer `PATCH` y suma una versión nueva que apunta al origen. El nombre en ElevenLabs es el prefijo más el nombre que eligió el equipo, sin repetir el prefijo si ya lo escribieron. Los ocho `agent_id` de `config/casos.yaml` no se leen para escribir. Si una escritura los recibiera, se rechaza y el identificador no entra al log.
+
+La guía de ramas de ElevenLabs todavía dice que el versionado es optativo. La referencia de la API dice que `enable_versioning` está deprecado y se ignora, porque todos los agentes ya se versionan. Manda la referencia. Las ramas y el reparto de tráfico no entran en este alcance. La historia que ve el equipo es la de Postgres.
+
+Nada se borra en cascada. Archivar, con confirmación en ese pedido, borra el agente en ElevenLabs y marca `archivado_at`. La configuración y las transcripciones se quedan. El equipo no crea otro agente después, porque `equipo_id` es único.
+
+## ADR-013 · Contrato del agente de equipo con ElevenLabs
+
+Al crear, el servidor fija idioma `es`, la voz, el modelo, el prompt del equipo y el primer mensaje. No agrega reglas al prompt. Deja `enable_auth` en verdadero, sin lista blanca. Apaga `prompt`, `llm` y `voice_id`. Deja `text_only` encendido. Declara los placeholders `modulo`, `equipo`, `imprevistos_activos` y `resumen_previo`. La sala reutiliza la credencial y el control del ADR-010. El slug de esas conversaciones es `agente-del-equipo`, así no entran a la cobertura de los interlocutores. La voz de la cohorte (ADR-008) no cambia. La voz de este agente es un interruptor por equipo, apagado por defecto, y aplica también al instructor.
+
+La tool es una sola. La URL tiene que ser HTTPS pública: se rechaza usuario y contraseña en la URL, localhost, dominios internos y cualquier dirección privada, también después del DNS. La prueba no sigue redirecciones. El valor del secreto cruza el servidor hacia `POST /v1/convai/secrets`. La base guarda `secret_id`. El texto en claro de la prueba queda en el ADR-014.
+
+`POST /v1/convai/agents/{agent_id}/simulate-conversation` quedó deprecado el 31 de octubre de 2026. La simulación usa `POST /v1/convai/agent-testing/create` con tipo `simulation` y después `POST /v1/convai/agents/{agent_id}/run-tests`. El usuario simulado y el evaluador salen de la config. El valor inicial es `gpt-5.4-mini`, el más barato de los tres, para no dejar el default `claude-sonnet-4-6`. El tope se revisa antes de llamar. Si ElevenLabs rechaza, la base no cambia.
+
+El mismo día, la corrida de «M2 · Prueba» respondió en 549 ms con estado `pending`, sin razón ni transcripción. El servidor la guardó como error. `GET /v1/convai/test-invocations/{id}`, que no vuelve a lanzar la simulación, mostró después `passed`, 573 créditos, razón del evaluador y 17 turnos, incluido un llamado a la tool. Desde entonces el servidor espera esa lectura hasta `passed`, `failed` o `cancelled`, con un tope de 120 segundos. La frase que decía que la prueba sale sin el secreto guardado queda reemplazada por el ADR-014.
+
+## ADR-014 · Secreto de la tool cifrado para la prueba
+
+ElevenLabs guarda el secreto y solo devuelve `secret_id`. No se puede volver a leer. «Probar la tool» salía sin el encabezado cuando el campo venía vacío, así que un backend que exige el secreto rechazaba una tool bien configurada.
+
+El valor se cifra con AES-256-GCM de `node:crypto`. La clave es `TOOL_SECRET_KEY`, derivada con scrypt y la sal fija `faro-tool-v1`, y vive solo en el servidor. El resultado queda en `agentes_equipo.tool_secreto_cifrado`. No entra al snapshot, ni a la respuesta de la API, ni al navegador, ni al log. Se descifra únicamente para armar el encabezado de esa prueba. Si la respuesta de la URL repite el secreto, se sustituye por `***` antes de mostrarla. La transcripción hace lo mismo con el encabezado `x-faro-tool-secret`.
+
+Un secreto que ya estaba en ElevenLabs antes de esta columna no se puede recuperar. El equipo lo escribe otra vez. Si falta la clave, guardar un secreto nuevo falla antes de llamar a ElevenLabs.
+

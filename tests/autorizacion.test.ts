@@ -101,5 +101,19 @@ describe("autorización", () => {
       { rol: "estudiante", texto: "hola" },
       { rol: "interlocutor", texto: "buenas" },
     ])
+    const conTool = fichaDesde({
+      transcript: [
+        { role: "agent", message: "voy a consultar" },
+        {
+          role: "agent",
+          tool_calls: [{ tool_name: "consultar", params_as_json: "{\"direccion\":\"centro\"}" }],
+        },
+        {
+          role: "agent",
+          tool_results: [{ tool_name: "consultar", is_error: false, result_value: "{\"ok\":true}" }],
+        },
+      ],
+    })
+    expect(conTool.mensajes.filter((item) => item.rol === "tool")).toHaveLength(2)
   })
 })

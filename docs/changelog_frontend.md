@@ -1,5 +1,17 @@
 # Cambios del frontend
 
+- [2026-10-31] [FIX] Los accesos de la sala, el JSON y el panel usan el estilo de botón. Las casillas quedan junto a su texto. La columna Origen dice «Guardado» o la versión de la que salió. La transcripción muestra la tool.
+  Archivos modificados: src/componentes/formulario-agente.tsx, src/componentes/conversacion-cliente.tsx, src/app/(plataforma)/agente/page.tsx, src/app/(plataforma)/conversacion/[slug]/page.tsx, src/app/(plataforma)/instructor/page.tsx, src/app/(plataforma)/historial/[id]/page.tsx, src/app/globals.css
+
+- [2026-10-31] [FEAT] La barra muestra los destinos como chips. «Mi agente» es el enlace que sustituye al texto «Demos».
+  Archivos modificados: src/componentes/navegacion.tsx, src/componentes/enlaces-nav.tsx, src/app/globals.css
+
+- [2026-10-31] [FEAT] «Mi agente» reemplaza el enlace de demos. El equipo configura, prueba la tool, simula y abre la sala. El panel lista los agentes, el consumo y el archivo.
+  Archivos modificados: src/componentes/navegacion.tsx, src/componentes/formulario-agente.tsx, src/componentes/conversacion-cliente.tsx, src/app/(plataforma)/agente/page.tsx, src/app/(plataforma)/conversacion/[slug]/page.tsx, src/app/(plataforma)/historial/page.tsx, src/app/(plataforma)/historial/[id]/page.tsx, src/app/(plataforma)/instructor/page.tsx
+
+- [2026-10-31] [FEAT] El panel del instructor muestra si las variables de la conversación coinciden con las que emitió el servidor.
+  Archivos modificados: src/app/(plataforma)/instructor/page.tsx
+
 - [2026-10-30] [FIX] Los imprevistos de Seguros Pampa se activan solo en Demo del instructor. Las tarjetas avisan que no entran al historial de los equipos.
   Archivos modificados: src/app/(plataforma)/interlocutores/page.tsx, src/app/(plataforma)/instructor/page.tsx
 

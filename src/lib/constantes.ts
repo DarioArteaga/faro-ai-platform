@@ -8,6 +8,7 @@ export const NINGUNO = "ninguno"
 export const EQUIPO_SIN_NOMBRE = "sin nombre"
 export const MODULO_DEFAULT = "M1"
 export const ID_COHORTE = "principal"
+export const SLUG_AGENTE_EQUIPO = "agente-del-equipo"
 export const SLUG_EQUIPO_DEMO = "demo-del-instructor"
 export const NOMBRE_EQUIPO_DEMO = "Demo del instructor"
 export const AUDIENCIAS = ["curso", "instructor"] as const

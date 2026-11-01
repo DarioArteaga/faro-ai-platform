@@ -4,6 +4,7 @@ import { notFound } from "next/navigation"
 
 import {
   activarAccion,
+  archivarAgenteAccion,
   bajaEquipoAccion,
   bajaEstudianteAccion,
   cambiarModuloAccion,
@@ -11,11 +12,14 @@ import {
   crearEquipoAccion,
   crearEstudianteAccion,
   editarEstudianteAccion,
+  guardarTopesAccion,
   renombrarEquipoAccion,
 } from "@/acciones/instructor"
 import { MODULOS, NOMBRE_EQUIPO_DEMO, SLUG_EQUIPO_DEMO } from "@/lib/constantes"
+import { textoControl } from "@/lib/control-variables"
 import { formatoFecha } from "@/lib/fecha"
 import { leerPaginacion } from "@/lib/paginacion"
+import { listarAgentesInstructor } from "@/servicios/agentes"
 import { listarTodas } from "@/servicios/conversaciones"
 import { datosPanel } from "@/servicios/instructor"
 import { exigirUsuario } from "@/servicios/sesion"
@@ -35,7 +39,7 @@ const avisos: Record<string, string> = {
 export default async function Instructor({
   searchParams,
 }: {
-  searchParams: Promise<{ aviso?: string; page?: string; page_size?: string }>
+  searchParams: Promise<{ aviso?: string; page?: string; page_size?: string; agentes_page?: string }>
 }): Promise<React.ReactElement> {
   const usuario = await exigirUsuario()
   if (usuario.rol !== "instructor") notFound()
@@ -44,7 +48,14 @@ export default async function Instructor({
   if (parametros.page) consulta.set("page", parametros.page)
   if (parametros.page_size) consulta.set("page_size", parametros.page_size)
   const pagina = leerPaginacion(consulta)
-  const [panel, transcripciones] = await Promise.all([datosPanel(), listarTodas(pagina.page, pagina.page_size)])
+  const consultaAgentes = new URLSearchParams()
+  if (parametros.agentes_page) consultaAgentes.set("page", parametros.agentes_page)
+  const paginaAgentes = leerPaginacion(consultaAgentes)
+  const [panel, transcripciones, agentes] = await Promise.all([
+    datosPanel(),
+    listarTodas(pagina.page, pagina.page_size),
+    listarAgentesInstructor(paginaAgentes.page, paginaAgentes.page_size),
+  ])
   const aviso = parametros.aviso ? avisos[parametros.aviso] : null
   return (
     <main id="contenido">
@@ -172,6 +183,7 @@ export default async function Instructor({
                 <th scope="col">Equipo</th>
                 <th scope="col">Interlocutor</th>
                 <th scope="col">Quién la condujo</th>
+                <th scope="col">Control</th>
                 <th scope="col">Leer</th>
               </tr>
             </thead>
@@ -180,8 +192,12 @@ export default async function Instructor({
                 <tr key={item.id}>
                   <td>{formatoFecha(new Date(item.iniciada_at))}</td>
                   <td>{item.equipo_nombre}</td>
-                  <td>{item.agente_nombre}</td>
+                  <td>
+                    {item.agente_nombre}
+                    {item.version_numero ? `, versión ${item.version_numero}` : ""}
+                  </td>
                   <td>{item.conductor}</td>
+                  <td>{textoControl(item.control_variables ?? "", item.claves_alteradas)}</td>
                   <td>
                     <Link href={`/historial/${item.id}`}>Abrir</Link>
                   </td>
@@ -194,6 +210,108 @@ export default async function Instructor({
           {transcripciones.page > 1 ? <Link href={`/instructor?page=${transcripciones.page - 1}`}>Anterior</Link> : null}{" "}
           {transcripciones.total_pages > transcripciones.page ? (
             <Link href={`/instructor?page=${transcripciones.page + 1}`}>Siguiente</Link>
+          ) : null}
+        </nav>
+      </section>
+
+      <section>
+        <h2>Agentes de los equipos</h2>
+        {agentes.items.length === 0 ? <p>Todavía no hay equipos.</p> : null}
+        {agentes.items.map((fila) => (
+          <article key={fila.equipo_slug} className="tarjeta">
+            <h3>{fila.equipo_nombre}</h3>
+            {fila.nombre ? (
+              <p>
+                {fila.nombre}. Versión {fila.version ?? ""}. Modelo {fila.modelo ?? ""}. Voz {fila.voz ?? ""}.
+                {fila.archivado ? " Archivado." : ""}
+                {fila.actualizado_at ? ` Último cambio ${formatoFecha(new Date(fila.actualizado_at))}.` : ""}
+              </p>
+            ) : (
+              <p>Este equipo todavía no tiene agente.</p>
+            )}
+            <p>
+              Texto {fila.uso.texto} de {fila.topes.conversacionesTexto}. Simulaciones {fila.uso.simulaciones} de{" "}
+              {fila.topes.simulaciones}. Voz {Math.floor(fila.uso.segundosVoz / 60)} de {fila.topes.minutosVoz} minutos.
+            </p>
+            {fila.nombre && !fila.archivado ? (
+              <p>
+                <Link className="boton inline-block no-underline" href={`/agente?equipo=${fila.equipo_slug}`}>
+                  Ver configuración
+                </Link>{" "}
+                <Link
+                  className="boton inline-block no-underline"
+                  href={`/conversacion/agente-del-equipo?equipo=${fila.equipo_slug}`}
+                >
+                  Probar
+                </Link>
+              </p>
+            ) : null}
+            <form action={guardarTopesAccion}>
+              <input type="hidden" name="equipo_slug" value={fila.equipo_slug} />
+              <label htmlFor={`texto-${fila.equipo_slug}`}>
+                Tope de conversaciones de texto
+                <input
+                  id={`texto-${fila.equipo_slug}`}
+                  name="conversaciones_texto"
+                  type="number"
+                  min={1}
+                  max={10000}
+                  defaultValue={fila.topes.conversacionesTexto}
+                  required
+                />
+              </label>
+              <label htmlFor={`sims-${fila.equipo_slug}`}>
+                Tope de simulaciones
+                <input
+                  id={`sims-${fila.equipo_slug}`}
+                  name="simulaciones"
+                  type="number"
+                  min={1}
+                  max={1000}
+                  defaultValue={fila.topes.simulaciones}
+                  required
+                />
+              </label>
+              <label htmlFor={`voz-min-${fila.equipo_slug}`}>
+                Tope de minutos de voz
+                <input
+                  id={`voz-min-${fila.equipo_slug}`}
+                  name="minutos_voz"
+                  type="number"
+                  min={1}
+                  max={600}
+                  defaultValue={fila.topes.minutosVoz}
+                  required
+                />
+              </label>
+              <label htmlFor={`voz-eq-${fila.equipo_slug}`} className="inline-flex items-center gap-2">
+                <input
+                  id={`voz-eq-${fila.equipo_slug}`}
+                  type="checkbox"
+                  name="voz_habilitada"
+                  value="si"
+                  defaultChecked={fila.topes.vozHabilitada}
+                />
+                Voz habilitada para este equipo
+              </label>
+              <button type="submit">Guardar topes</button>
+            </form>
+            {fila.nombre && !fila.archivado ? (
+              <form action={archivarAgenteAccion}>
+                <input type="hidden" name="equipo_slug" value={fila.equipo_slug} />
+                <label htmlFor={`archivar-${fila.equipo_slug}`} className="inline-flex items-center gap-2">
+                  <input id={`archivar-${fila.equipo_slug}`} type="checkbox" name="confirmo" value="si" />
+                  Confirmo archivar el agente y borrarlo en ElevenLabs
+                </label>
+                <button type="submit">Archivar agente</button>
+              </form>
+            ) : null}
+          </article>
+        ))}
+        <nav aria-label="Páginas de agentes">
+          {agentes.page > 1 ? <Link href={`/instructor?agentes_page=${agentes.page - 1}`}>Anterior</Link> : null}{" "}
+          {agentes.total_pages > agentes.page ? (
+            <Link href={`/instructor?agentes_page=${agentes.page + 1}`}>Siguiente</Link>
           ) : null}
         </nav>
       </section>

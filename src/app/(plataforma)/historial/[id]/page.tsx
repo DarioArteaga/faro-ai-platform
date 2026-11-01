@@ -34,13 +34,24 @@ export default async function PaginaTranscripcion({
       <h1>{datos.agente_nombre}</h1>
       <p>
         {formatoFecha(new Date(datos.iniciada_at))}. La condujo {datos.conductor}. Equipo {datos.equipo}. Modo {datos.modo}. Módulo {datos.modulo}.
+        {datos.version_numero ? ` Versión ${datos.version_numero}.` : ""}
       </p>
       {datos.mensajes.length === 0 ? <p>Esta conversación no tiene mensajes todavía.</p> : null}
       <ol>
         {datos.mensajes.map((mensaje, indice) => (
-          <li key={`${indice}-${mensaje.rol}`}>
-            <strong>{mensaje.rol === "estudiante" ? datos.conductor : datos.agente_nombre}: </strong>
-            {mensaje.texto}
+          <li key={`${indice}-${mensaje.rol}`} className="break-words">
+            {mensaje.rol === "tool" ? (
+              <>
+                <strong>Tool {mensaje.nombre}: </strong>
+                {mensaje.pedido ? `Pidió ${mensaje.pedido}. ` : null}
+                {mensaje.respuesta ? `${mensaje.error ? "Error" : "Respondió"}: ${mensaje.respuesta}` : null}
+              </>
+            ) : (
+              <>
+                <strong>{mensaje.rol === "estudiante" ? datos.conductor : datos.agente_nombre}: </strong>
+                {mensaje.texto}
+              </>
+            )}
           </li>
         ))}
       </ol>

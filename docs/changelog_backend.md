@@ -1,5 +1,20 @@
 # Cambios del backend
 
+- [2026-10-31] [FIX] La simulación espera el resultado de la invocación. La transcripción muestra la tool y oculta el secreto. Entrar a «Mi agente» sin sesión redirige sin traza.
+  Archivos modificados: src/lib/elevenlabs.ts, src/lib/enmascarar.ts, src/servicios/agentes.ts, src/app/api/v1/agentes/simulaciones/route.ts, src/app/(plataforma)/agente/page.tsx, tests/constructor.test.ts, tests/autorizacion.test.ts, docs/architecture_decisions.md
+
+- [2026-10-31] [SEC] El secreto de la tool se guarda cifrado y solo se usa en «Probar la tool».
+  Archivos modificados: src/lib/cifrado-secreto.ts, src/servicios/agentes.ts, prisma/schema.prisma, prisma/migrations/20261101013000_secreto_tool_cifrado/migration.sql, prisma/migrations/20261101013000_secreto_tool_cifrado/down.sql, docs/schema.dbml, docs/architecture_decisions.md, docs/index.md, .env.example, tests/constructor.test.ts
+
+- [2026-10-31] [FEAT] Las voces del constructor pasan a ser las del workspace. Los tres modelos se confirmaron otra vez en la lista de ElevenLabs.
+  Archivos modificados: config/constructor.yaml, tests/constructor.test.ts, docs/architecture_decisions.md
+
+- [2026-10-31] [FEAT] Cada equipo puede crear un agente, guardar versiones, definir una tool, correr simulaciones y abrir la sala con el mismo control de variables. El instructor ve el consumo, amplía topes y archiva.
+  Archivos modificados: config/constructor.yaml, prisma/schema.prisma, prisma/migrations/20261031220000_constructor_agentes/migration.sql, prisma/migrations/20261031220000_constructor_agentes/down.sql, docs/schema.dbml, docs/architecture_decisions.md, docs/architecture_c4.md, docs/index.md, src/lib/catalogo.ts, src/lib/constantes.ts, src/lib/constructor.ts, src/lib/cuerpo-agente.ts, src/lib/elevenlabs.ts, src/lib/url-publica.ts, src/servicios/agentes.ts, src/servicios/conversaciones.ts, src/acciones/instructor.ts, src/app/api/v1/agentes/route.ts, src/app/api/v1/agentes/restaurar/route.ts, src/app/api/v1/agentes/probar/route.ts, src/app/api/v1/agentes/simulaciones/route.ts, src/app/api/v1/conversaciones/route.ts, src/app/api/v1/conversaciones/sesion/route.ts, tests/constructor.test.ts
+
+- [2026-10-31] [SEC] Cada conversación nueva compara las variables que ElevenLabs registró con las emitidas por el servidor. Si difieren, o si llega un override de voz, modelo o prompt, la fila queda marcada.
+  Archivos modificados: src/lib/control-variables.ts, src/lib/elevenlabs.ts, src/servicios/conversaciones.ts, prisma/schema.prisma, prisma/migrations/20261031195700_control_variables/migration.sql, prisma/migrations/20261031195700_control_variables/down.sql, docs/schema.dbml, docs/architecture_decisions.md, docs/architecture_c4.md, docs/index.md, tests/control-variables.test.ts
+
 - [2026-10-30] [FIX] Una conversación de Seguros Pampa se guarda en el equipo Demo del instructor aunque el instructor tenga equipo asignado.
   Archivos modificados: src/lib/autorizacion.ts, src/servicios/conversaciones.ts, tests/autorizacion.test.ts, docs/architecture_decisions.md, docs/architecture_c4.md
 

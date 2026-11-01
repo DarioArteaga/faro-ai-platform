@@ -9,16 +9,19 @@ import {
   type SesionUsuario,
 } from "@/lib/autorizacion"
 import { interlocutorPorSlug, leerImprevistos, type Caso, type Interlocutor } from "@/lib/catalogo"
+import { controlarVariables, type InicioRecibido } from "@/lib/control-variables"
 import { db, registrarFalloDeDatos } from "@/lib/db"
 import { detalleSeguro } from "@/lib/enmascarar"
 import { ErrorHttp } from "@/lib/errores"
 import { pedirResumen, pedirToken, pedirUrlFirmada, traerConversacion, type FichaConversacion, type MensajeVisible } from "@/lib/elevenlabs"
+import { SLUG_AGENTE_EQUIPO } from "@/lib/constantes"
 import { clavesDelCaso } from "@/lib/imprevistos"
 import { log } from "@/lib/log"
 import { permitir } from "@/lib/limite"
 import { metaPagina, type MetaPagina } from "@/lib/paginacion"
 import { validarIdConversacion } from "@/lib/validar"
 import { armarVariables, type VariablesConversacion } from "@/lib/variables"
+import { agenteParaSala, mensajeDeTope, variablesDeSala } from "@/servicios/agentes"
 import { obtenerModulo, obtenerVozHabilitada } from "@/servicios/cohorte"
 import { asegurarEquipoDemo } from "@/servicios/instructor"
 
@@ -28,6 +31,7 @@ type Pendiente = {
   vence: number
   modo: Modo
   variables: VariablesConversacion
+  agenteEquipo?: { versionId: string; agentId: string; equipoId: string }
 }
 
 const pendientes = new Map<string, Pendiente>()
@@ -43,6 +47,9 @@ export type ItemConversacion = {
   modulo: string
   equipo_slug?: string
   equipo_nombre?: string
+  control_variables?: string
+  claves_alteradas?: string | null
+  version_numero?: number | null
 }
 
 export type ListaConversaciones = MetaPagina & { items: ItemConversacion[] }
@@ -52,8 +59,13 @@ export type Transcripcion = ItemConversacion & {
   mensajes: MensajeVisible[]
 }
 
-function llave(usuarioId: string, agenteSlug: string): string {
-  return `${usuarioId}:${agenteSlug}`
+function llave(usuarioId: string, agenteSlug: string, equipoId?: string): string {
+  return equipoId ? `${usuarioId}:${agenteSlug}:${equipoId}` : `${usuarioId}:${agenteSlug}`
+}
+
+function nombreVisible(slug: string, nombreDelEquipo: string | null | undefined): string {
+  if (slug === SLUG_AGENTE_EQUIPO && nombreDelEquipo) return nombreDelEquipo
+  return nombreAgente(slug)
 }
 
 function nombreAgente(slug: string): string {
@@ -61,6 +73,20 @@ function nombreAgente(slug: string): string {
   if (!hallado) return slug
   if (hallado.caso.audiencia === "instructor") return `${hallado.interlocutor.nombre} · ${hallado.caso.nombre}`
   return hallado.interlocutor.nombre
+}
+
+function agentIdDeFila(fila: {
+  agenteSlug: string
+  versionAgente: { agente: { agentId: string } } | null
+}): string {
+  if (fila.agenteSlug === SLUG_AGENTE_EQUIPO) {
+    const agentId = fila.versionAgente?.agente.agentId
+    if (!agentId) throw new ErrorHttp(404, "No encontramos esa conversación.")
+    return agentId
+  }
+  const hallado = interlocutorPorSlug(fila.agenteSlug)
+  if (!hallado) throw new ErrorHttp(404, "No encontramos esa conversación.")
+  return hallado.interlocutor.agent_id
 }
 
 function exigirCasoActivo(slug: string): { caso: Caso; interlocutor: Interlocutor } {
@@ -142,10 +168,75 @@ async function variablesPara(
   }
 }
 
+function emitidasDeFila(fila: {
+  modulo: string
+  equipoEnviado: string | null
+  imprevistosActivos: string
+  resumenPrevioEnviado: string
+  modo: string
+}): { variables: VariablesConversacion; modo: Modo } {
+  return {
+    variables: {
+      modulo: fila.modulo,
+      equipo: fila.equipoEnviado ?? "",
+      imprevistos_activos: fila.imprevistosActivos,
+      resumen_previo: fila.resumenPrevioEnviado,
+    },
+    modo: fila.modo === "voz" ? "voz" : "texto",
+  }
+}
+
+async function guardarControl(
+  id: string,
+  variables: VariablesConversacion,
+  modo: Modo,
+  inicio: InicioRecibido | null,
+): Promise<void> {
+  const resultado = controlarVariables(variables, modo, inicio)
+  if (resultado.control === "pendiente") return
+  try {
+    await db().conversacion.update({
+      where: { id },
+      data: { controlVariables: resultado.control, clavesAlteradas: resultado.claves },
+    })
+  } catch (error) {
+    log.warn({ detalle: detalleSeguro(error) }, "no se guardo el control de variables")
+  }
+}
+
+async function iniciarSalaDeEquipo(
+  usuario: SesionUsuario,
+  entrada: { modo: Modo; equipoSlug?: string | null },
+): Promise<{ modo: Modo; signed_url?: string; token?: string; variables: VariablesConversacion; usuario_id: string }> {
+  if (!permitir(`sesion:${usuario.id}`, 20, 10 * 60 * 1000)) {
+    throw new ErrorHttp(429, "Demasiadas conversaciones seguidas. Espera un momento.")
+  }
+  const sala = await agenteParaSala(usuario, entrada.equipoSlug ?? null)
+  if (entrada.modo === "voz" && !sala.vozHabilitada) {
+    throw new ErrorHttp(403, "La voz no está habilitada para este equipo.")
+  }
+  const bloqueo = mensajeDeTope(entrada.modo, sala)
+  if (bloqueo) throw new ErrorHttp(403, bloqueo)
+  await intentarResumen(sala.equipoId, SLUG_AGENTE_EQUIPO)
+  const variables = await variablesDeSala(sala.equipoId, sala.equipoNombre)
+  const credencial =
+    entrada.modo === "texto"
+      ? { signed_url: await pedirUrlFirmada(sala.agentId) }
+      : { token: await pedirToken(sala.agentId) }
+  pendientes.set(llave(usuario.id, SLUG_AGENTE_EQUIPO, sala.equipoId), {
+    vence: Date.now() + VIGENCIA_MS,
+    modo: entrada.modo,
+    variables,
+    agenteEquipo: { versionId: sala.versionId, agentId: sala.agentId, equipoId: sala.equipoId },
+  })
+  return { modo: entrada.modo, ...credencial, variables, usuario_id: usuario.id }
+}
+
 export async function iniciarSesion(
   usuario: SesionUsuario,
-  entrada: { agenteSlug: string; modo: Modo },
+  entrada: { agenteSlug: string; modo: Modo; equipoSlug?: string | null },
 ): Promise<{ modo: Modo; signed_url?: string; token?: string; variables: VariablesConversacion; usuario_id: string }> {
+  if (entrada.agenteSlug === SLUG_AGENTE_EQUIPO) return iniciarSalaDeEquipo(usuario, entrada)
   const { caso, interlocutor } = exigirCasoActivo(entrada.agenteSlug)
   const codigo = puedeIniciarConversacion(usuario, caso.audiencia)
   if (codigo === 403) {
@@ -190,10 +281,59 @@ async function fichaPropia(
   return ficha
 }
 
+async function registrarSalaDeEquipo(
+  usuario: SesionUsuario,
+  entrada: { conversationId: string; modo: Modo; equipoSlug?: string | null },
+): Promise<{ id: string }> {
+  const sala = await agenteParaSala(usuario, entrada.equipoSlug ?? null)
+  const clave = llave(usuario.id, SLUG_AGENTE_EQUIPO, sala.equipoId)
+  const pendiente = pendientes.get(clave)
+  if (
+    !pendiente ||
+    pendiente.vence <= Date.now() ||
+    pendiente.modo !== entrada.modo ||
+    !pendiente.agenteEquipo ||
+    pendiente.agenteEquipo.agentId !== sala.agentId
+  ) {
+    throw new ErrorHttp(404, "No encontramos esa conversación.")
+  }
+  const id = validarIdConversacion(entrada.conversationId)
+  const ficha = await fichaPropia(id, usuario.id, sala.agentId, true)
+  const control = controlarVariables(pendiente.variables, entrada.modo, ficha.inicio)
+  try {
+    await db().conversacion.create({
+      data: {
+        id,
+        equipoId: sala.equipoId,
+        usuarioId: usuario.id,
+        agenteSlug: SLUG_AGENTE_EQUIPO,
+        modulo: pendiente.variables.modulo,
+        imprevistosActivos: pendiente.variables.imprevistos_activos,
+        resumenPrevioEnviado: pendiente.variables.resumen_previo,
+        modo: entrada.modo,
+        equipoEnviado: pendiente.variables.equipo,
+        controlVariables: control.control,
+        clavesAlteradas: control.claves,
+        versionAgenteId: pendiente.agenteEquipo.versionId,
+        duracionSegundos: ficha.duracionSegundos,
+      },
+    })
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+      throw new ErrorHttp(409, "Esa conversación ya está registrada.")
+    }
+    registrarFalloDeDatos(error, "registrar-conversacion-equipo")
+    throw new ErrorHttp(500, "No se pudo guardar la conversación.")
+  }
+  pendientes.delete(clave)
+  return { id }
+}
+
 export async function registrarConversacion(
   usuario: SesionUsuario,
-  entrada: { conversationId: string; agenteSlug: string; modo: Modo },
+  entrada: { conversationId: string; agenteSlug: string; modo: Modo; equipoSlug?: string | null },
 ): Promise<{ id: string }> {
+  if (entrada.agenteSlug === SLUG_AGENTE_EQUIPO) return registrarSalaDeEquipo(usuario, entrada)
   const { caso, interlocutor } = exigirCasoActivo(entrada.agenteSlug)
   const equipo = await exigirEquipo(usuario, caso)
   const id = validarIdConversacion(entrada.conversationId)
@@ -202,7 +342,8 @@ export async function registrarConversacion(
     throw new ErrorHttp(404, "No encontramos esa conversación.")
   }
   const variables = pendiente.variables
-  await fichaPropia(id, usuario.id, interlocutor.agent_id, true)
+  const ficha = await fichaPropia(id, usuario.id, interlocutor.agent_id, true)
+  const control = controlarVariables(variables, entrada.modo, ficha.inicio)
   try {
     await db().conversacion.create({
       data: {
@@ -214,6 +355,9 @@ export async function registrarConversacion(
         imprevistosActivos: variables.imprevistos_activos,
         resumenPrevioEnviado: variables.resumen_previo,
         modo: entrada.modo,
+        equipoEnviado: variables.equipo,
+        controlVariables: control.control,
+        clavesAlteradas: control.claves,
       },
     })
   } catch (error) {
@@ -236,17 +380,21 @@ export async function listarDelEquipo(usuario: SesionUsuario, page: number, page
     orderBy: { iniciadaAt: "desc" },
     skip: (page - 1) * pageSize,
     take: pageSize,
-    include: { usuario: { select: { nombre: true } } },
+    include: {
+      usuario: { select: { nombre: true } },
+      versionAgente: { select: { numero: true, agente: { select: { nombre: true } } } },
+    },
   })
   return {
     items: filas.map((fila) => ({
       id: fila.id,
       iniciada_at: fila.iniciadaAt.toISOString(),
       agente_slug: fila.agenteSlug,
-      agente_nombre: nombreAgente(fila.agenteSlug),
+      agente_nombre: nombreVisible(fila.agenteSlug, fila.versionAgente?.agente.nombre),
       conductor: fila.usuario.nombre,
       modo: fila.modo,
       modulo: fila.modulo,
+      version_numero: fila.versionAgente?.numero ?? null,
     })),
     ...metaPagina(total, page, pageSize),
   }
@@ -263,6 +411,7 @@ export async function listarTodas(page: number, pageSize: number): Promise<Lista
     include: {
       usuario: { select: { nombre: true } },
       equipo: { select: { slug: true, nombre: true } },
+      versionAgente: { select: { numero: true, agente: { select: { nombre: true } } } },
     },
   })
   return {
@@ -270,12 +419,15 @@ export async function listarTodas(page: number, pageSize: number): Promise<Lista
       id: fila.id,
       iniciada_at: fila.iniciadaAt.toISOString(),
       agente_slug: fila.agenteSlug,
-      agente_nombre: nombreAgente(fila.agenteSlug),
+      agente_nombre: nombreVisible(fila.agenteSlug, fila.versionAgente?.agente.nombre),
       conductor: fila.usuario.nombre,
       modo: fila.modo,
       modulo: fila.modulo,
       equipo_slug: fila.equipo.slug,
       equipo_nombre: fila.equipo.nombre,
+      control_variables: fila.controlVariables,
+      claves_alteradas: fila.clavesAlteradas,
+      version_numero: fila.versionAgente?.numero ?? null,
     })),
     ...metaPagina(total, page, pageSize),
   }
@@ -291,19 +443,20 @@ export async function leerTranscripcion(usuario: SesionUsuario, conversationId: 
     include: {
       usuario: { select: { nombre: true } },
       equipo: { select: { nombre: true } },
+      versionAgente: { select: { numero: true, agente: { select: { nombre: true, agentId: true } } } },
     },
   })
   if (!fila || !puedeVerConversacion(usuario, fila)) {
     throw new ErrorHttp(404, "No encontramos esa conversación.")
   }
-  const hallado = interlocutorPorSlug(fila.agenteSlug)
-  if (!hallado) throw new ErrorHttp(404, "No encontramos esa conversación.")
-  const ficha = await fichaPropia(id, fila.usuarioId, hallado.interlocutor.agent_id, false)
+  const agentId = agentIdDeFila(fila)
+  const ficha = await fichaPropia(id, fila.usuarioId, agentId, false)
   return {
     id: fila.id,
     iniciada_at: fila.iniciadaAt.toISOString(),
     agente_slug: fila.agenteSlug,
-    agente_nombre: nombreAgente(fila.agenteSlug),
+    agente_nombre: nombreVisible(fila.agenteSlug, fila.versionAgente?.agente.nombre),
+    version_numero: fila.versionAgente?.numero ?? null,
     conductor: fila.usuario.nombre,
     equipo: fila.equipo.nombre,
     modo: fila.modo,
@@ -314,12 +467,14 @@ export async function leerTranscripcion(usuario: SesionUsuario, conversationId: 
 
 export async function cerrarConversacion(usuario: SesionUsuario, conversationId: string): Promise<{ guardado: boolean }> {
   const id = validarIdConversacion(conversationId)
-  const fila = await db().conversacion.findUnique({ where: { id } })
+  const fila = await db().conversacion.findUnique({
+    where: { id },
+    include: { versionAgente: { select: { agente: { select: { agentId: true } } } } },
+  })
   if (!fila || !puedeVerConversacion(usuario, fila)) {
     throw new ErrorHttp(404, "No encontramos esa conversación.")
   }
-  const hallado = interlocutorPorSlug(fila.agenteSlug)
-  if (!hallado) throw new ErrorHttp(404, "No encontramos esa conversación.")
+  const agentId = agentIdDeFila(fila)
   const posterior = await db().conversacion.findFirst({
     where: {
       equipoId: fila.equipoId,
@@ -328,8 +483,28 @@ export async function cerrarConversacion(usuario: SesionUsuario, conversationId:
     },
     select: { id: true },
   })
+  const debeLeerFicha = !posterior || fila.controlVariables === "pendiente"
+  let ficha: FichaConversacion | null = null
+  if (debeLeerFicha) {
+    try {
+      ficha = await fichaPropia(id, fila.usuarioId, agentId, false)
+    } catch (error) {
+      if (!posterior) throw error
+      log.warn({ detalle: detalleSeguro(error) }, "no se pudo comprobar la conversacion")
+    }
+  }
+  if (ficha && fila.controlVariables === "pendiente") {
+    const emitidas = emitidasDeFila(fila)
+    await guardarControl(id, emitidas.variables, emitidas.modo, ficha.inicio)
+  }
+  if (ficha?.duracionSegundos != null && ficha.duracionSegundos !== fila.duracionSegundos) {
+    try {
+      await db().conversacion.update({ where: { id }, data: { duracionSegundos: ficha.duracionSegundos } })
+    } catch (error) {
+      log.warn({ detalle: detalleSeguro(error) }, "no se guardo la duracion")
+    }
+  }
   if (posterior) return { guardado: true }
-  await fichaPropia(id, fila.usuarioId, hallado.interlocutor.agent_id, false)
   try {
     const texto = await pedirResumen(id)
     if (!texto) return { guardado: false }

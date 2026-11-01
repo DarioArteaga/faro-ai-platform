@@ -8,6 +8,7 @@ const esquema = z
   .object({
     agente_slug: z.string().min(1).max(80),
     modo: z.enum(["texto", "voz"]),
+    equipo_slug: z.string().min(1).max(80).optional(),
   })
   .strict()
 
@@ -15,6 +16,10 @@ export async function POST(request: Request): Promise<Response> {
   return manejar(async () => {
     const usuario = await exigirUsuario()
     const datos = esquema.parse(await leerCuerpo(request))
-    return iniciarSesion(usuario, { agenteSlug: datos.agente_slug, modo: datos.modo })
+    return iniciarSesion(usuario, {
+      agenteSlug: datos.agente_slug,
+      modo: datos.modo,
+      equipoSlug: datos.equipo_slug ?? null,
+    })
   })
 }

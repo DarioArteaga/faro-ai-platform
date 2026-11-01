@@ -119,6 +119,10 @@ export function casoActivo(): Caso {
   return caso
 }
 
+export function idsDeInterlocutores(): string[] {
+  return leerCasos().flatMap((caso) => caso.interlocutores.map((interlocutor) => interlocutor.agent_id))
+}
+
 export function interlocutorPorSlug(slug: string): { caso: Caso; interlocutor: Interlocutor } | null {
   for (const caso of leerCasos()) {
     const interlocutor = caso.interlocutores.find((item) => item.slug === slug)
